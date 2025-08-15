@@ -341,6 +341,7 @@ class BaseModel(torch.nn.Module, ABC):
         parallel_dims: ParallelDims,
         device: torch.device,
         revision: Optional[str] = None,
+        dcp_snapshot_path: Optional[str] = None,
     ):
         """
         Load weights from a HuggingFace model.
@@ -349,6 +350,8 @@ class BaseModel(torch.nn.Module, ABC):
             model_name_or_path (str): The name or path of the model.
             parallel_dims (ParallelDims): The parallel dimensions.
             device (torch.device): The device to load the weights.
+            revision (str): The revision of the model to use.
+            dcp_snapshot_path: Path to the DCP snapshot for saving/loading the mdoel.
         """
         raise NotImplementedError
 

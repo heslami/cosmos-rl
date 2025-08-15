@@ -44,9 +44,6 @@ from cosmos_rl.utils.logging import logger
 from cosmos_rl.utils.parallelism import ParallelDims
 from cosmos_rl.utils.util import clear_weight_name, resolve_model_path, retry
 
-DCP_CHECKPOINT_PATH_PREFIX = "/root/.cache"
-DCP_CHECKPOINT_PATH_SUFFIX = "dcp"
-
 
 @ModelRegistry.register(
     DeepseekV3MoEWeightMapper, default_data_packer_cls=DeepSeek_DataPacker
@@ -220,17 +217,35 @@ class DeepseekV3MoEModel(BaseModel):
         parallel_dims: ParallelDims,
         device: torch.device,
         revision: Optional[str] = None,
+        dcp_snapshot_path: Optional[str] = None,
     ):
-        dcp_checkpoint_path = os.path.join(
-            DCP_CHECKPOINT_PATH_PREFIX,
-            model_name_or_path.split("/")[-1].lower(),
-            DCP_CHECKPOINT_PATH_SUFFIX,
-        )
-        # if it is a huggingface model and no checkpoint exists, we need to load the weights from the safetensors files
-        if len(model_name_or_path.split("/")) == 2 and (
-            not os.path.exists(dcp_checkpoint_path)
-            or len(os.listdir(dcp_checkpoint_path)) == 0
+        if (
+            dcp_snapshot_path
+            and os.path.exists(dcp_snapshot_path)
+            and len(os.listdir(dcp_snapshot_path)) >= 0
         ):
+            logger.info("Loading from distributed checkpoints...")
+            # Transformer engine adds this extra state which we dont have in the saved checkpoint.
+            mapped_state_dict = {
+                k: v
+                for k, v in self.state_dict().items()
+                if not k.endswith("_extra_state")
+            }
+
+            logger.info("Creating storage reader...")
+            fs_storage_reader = torch.distributed.checkpoint.FileSystemReader(
+                dcp_snapshot_path
+            )
+            logger.info("Loading checkpoint ...")
+            torch.distributed.checkpoint.load(
+                state_dict=mapped_state_dict,
+                storage_reader=fs_storage_reader,
+                planner=RenameLoadPlanner(allow_partial_load=False),
+            )
+            logger.info("Refreshing model.")
+            self.load_state_dict(self.state_dict())
+            logger.info("Checkpoint loaded.")
+        else:
             # The checkpoint loading assumes bf16 checkpoints. The default deepseekv3 checkpoint is in fp8. We needs to convert the checkpoints from fp8 to bf16 first.
             # Can follow the instructions here: https://github.com/NVIDIA-NeMo/RL/blob/main/docs/guides/deepseek.md
             # Load all safetensors from `model_path`
@@ -370,47 +385,16 @@ class DeepseekV3MoEModel(BaseModel):
                     with torch.no_grad():
                         local_view.data.copy_(shared_weight)
 
-            logger.info(f"Dumping the tensors to DCP folder {dcp_checkpoint_path}")
-            os.makedirs(dcp_checkpoint_path, exist_ok=True)
-            fs_storage_writer = torch.distributed.checkpoint.FileSystemWriter(
-                dcp_checkpoint_path
-            )
-            torch.distributed.checkpoint.save(
-                state_dict=self_state_dict,
-                storage_writer=fs_storage_writer,
-            )
-        else:
-            logger.info("Loading from distributed checkpoints...")
-            model_name_or_path = model_name_or_path.rstrip("/")
-            if model_name_or_path.endswith("_hf"):
-                model_name_or_path_dcp = model_name_or_path[:-3]
-                logger.info(
-                    f"Found model path with _hf prefix ({model_name_or_path}. Looking for non-hf checkpoint at: {model_name_or_path_dcp}"
+            if dcp_snapshot_path:
+                logger.info(f"Dumping the tensors to DCP folder {dcp_snapshot_path}")
+                os.makedirs(dcp_snapshot_path, exist_ok=True)
+                fs_storage_writer = torch.distributed.checkpoint.FileSystemWriter(
+                    dcp_snapshot_path
                 )
-                model_name_or_path = model_name_or_path_dcp
-            elif len(model_name_or_path.split("/")) == 2:
-                model_name_or_path = dcp_checkpoint_path
-
-            # Transformer engine adds this extra state which we dont have in the saved checkpoint.
-            mapped_state_dict = {
-                k: v
-                for k, v in self.state_dict().items()
-                if not k.endswith("_extra_state")
-            }
-
-            logger.info("Creating storage reader...")
-            fs_storage_reader = torch.distributed.checkpoint.FileSystemReader(
-                dcp_checkpoint_path
-            )
-            logger.info("Loading checkpoint ...")
-            torch.distributed.checkpoint.load(
-                state_dict=mapped_state_dict,
-                storage_reader=fs_storage_reader,
-                planner=RenameLoadPlanner(allow_partial_load=False),
-            )
-            logger.info("Refreshing model.")
-            self.load_state_dict(self.state_dict())
-            logger.info("Checkpoint loaded.")
+                torch.distributed.checkpoint.save(
+                    state_dict=self_state_dict,
+                    storage_writer=fs_storage_writer,
+                )
 
     def load_state_dict(
         self, state_dict: dict[str, Any], strict: bool = True, assign: bool = False

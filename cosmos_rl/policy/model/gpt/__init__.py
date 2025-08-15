@@ -530,6 +530,7 @@ class GPT(BaseModel):
         parallel_dims: ParallelDims,
         device: torch.device,
         revision: Optional[str] = None,
+        dcp_snapshot_path: Optional[str] = None,
     ):
         """
         Load weights from a HuggingFace model.
