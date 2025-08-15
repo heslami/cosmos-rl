@@ -376,6 +376,7 @@ class GRPOTrainer(Trainer):
             self.parallel_dims,
             self.device,
             revision=self.config.policy.model_revision,
+            dcp_snapshot_path=config.policy.dcp_snapshot_path,
         )
         self.model.train()
         self.model_ready = True

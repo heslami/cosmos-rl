@@ -657,6 +657,10 @@ class PolicyConfig(BaseModel):
         default=None,
         description="The revision of the model to use",
     )
+    dcp_snapshot_path: Optional[str] = Field(
+        default=None,
+        description="Path to the DCP snapshot to load the model from or save the model to if non-exitent (used for development)"
+    )
     model_max_length: int = Field(
         default=4096,
         description="The maximum length for training, longer than this will be ignored for training stability",

@@ -341,6 +341,7 @@ class SFTTrainer(Trainer):
                     parallel_dims,
                     self.device,
                     revision=config.policy.model_revision,
+                    dcp_snapshot_path=config.policy.dcp_snapshot_path,
                 )
         else:
             self.model.load_hf_weights(
@@ -348,6 +349,7 @@ class SFTTrainer(Trainer):
                 parallel_dims,
                 self.device,
                 revision=config.policy.model_revision,
+                dcp_snapshot_path=config.policy.dcp_snapshot_path,
             )
         self.model.train()
 
