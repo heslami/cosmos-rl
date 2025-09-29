@@ -19,7 +19,7 @@ from torch.utils.data import Dataset, ConcatDataset
 from datasets import load_dataset
 from cosmos_rl.launcher.worker_entry import main as launch_worker
 from cosmos_rl.policy.config import Config as CosmosConfig
-from cosmos_rl.dispatcher.data.packer import DecoderOnlyLLMDataPacker, DataPacker
+from cosmos_rl.dispatcher.data.packer import DecoderOnlyLLMDataPacker, ChatDataPacker
 from cosmos_rl.utils.modelscope import modelscope_load_dataset
 from cosmos_rl.utils.logging import logger
 import cosmos_rl.utils.util as util
@@ -316,7 +316,7 @@ def custom_reward_fn(
     return reward
 
 
-class MathDataPacker(DataPacker):
+class MathDataPacker(ChatDataPacker):
     """
     This is a demo data packer that wraps the underlying data packer of the selected model.
     This is meaningless for this example, but useful for explaining:

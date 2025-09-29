@@ -19,6 +19,7 @@ from .model.position_encoding import (
 from .model.backbone import Joiner, Backbone
 from .model.deformable_transformer import DeformableTransformer
 from .model.dino import DINO
+from .model.model_utils import load_pretrained_weights
 
 
 @dataclass
@@ -266,4 +267,10 @@ class CRadioV3Model(BaseModel):
         device: torch.device,
         revision: Optional[str] = None,
     ):
-        pass
+        # for now, keep it hard-coded for a specific model and load the
+        pretrained_backbone_path = "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar"
+        pretrained_backbone_ckp = load_pretrained_weights(pretrained_backbone_path)
+        for name, tensor in self.state_dict().items():
+            if name in pretrained_backbone_ckp:
+                with torch.no_grad():
+                    tensor.data.copy_(pretrained_backbone_ckp[name])

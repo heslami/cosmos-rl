@@ -1,4 +1,4 @@
-from cosmos_rl.dispatcher.data.packer.base import DataPacker
+from cosmos_rl.dispatcher.data.packer.base import ChatDataPacker
 from typing import List, Any, Dict, Optional, Tuple
 import torch
 import torch.nn.functional as F
@@ -36,7 +36,7 @@ def encode_image_to_base64(image_inputs: List[str]) -> List[str]:
     return new_image_inputs
 
 
-class HFVLMDataPacker(DataPacker):
+class HFVLMDataPacker(ChatDataPacker):
     """
     Data protocol & processing logic for the HF VLMs for SFT and RL training.
     """

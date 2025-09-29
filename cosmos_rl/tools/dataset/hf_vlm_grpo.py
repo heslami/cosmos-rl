@@ -18,7 +18,7 @@ from torch.utils.data import Dataset, ConcatDataset
 from datasets import load_dataset
 from cosmos_rl.launcher.worker_entry import main as launch_worker
 from cosmos_rl.policy.config import Config
-from cosmos_rl.dispatcher.data.packer import DataPacker, HFVLMDataPacker
+from cosmos_rl.dispatcher.data.packer import ChatDataPacker, HFVLMDataPacker
 from cosmos_rl.utils.logging import logger
 from cosmos_rl.policy.config import Config as CosmosConfig
 import argparse
@@ -169,7 +169,7 @@ class HFVLMGRPOValDataset(HFVLMGRPODataset):
                 self.dataset = self.dataset[config.validation.dataset.split]
 
 
-class DemoDataPacker(DataPacker):
+class DemoDataPacker(ChatDataPacker):
     """
     This is a demo data packer that wraps the underlying data packer of the selected model.
     This is meaningless for this example, but useful for explaining:

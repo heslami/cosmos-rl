@@ -24,7 +24,7 @@ from torch.utils.data import Dataset, ConcatDataset
 from cosmos_rl.utils.util import retry
 from cosmos_rl.launcher.worker_entry import main as launch_worker
 from cosmos_rl.policy.config import Config as CosmosConfig
-from cosmos_rl.dispatcher.data.packer.base import DataPacker
+from cosmos_rl.dispatcher.data.packer.base import ChatDataPacker
 from transformers import AutoConfig
 import torchvision.transforms as T
 from torchvision.transforms.functional import InterpolationMode
@@ -125,7 +125,7 @@ def load_image(image_file, pil_image=None, input_size=448, max_num=12):
     return pixel_values
 
 
-class InternVL_DataPacker(DataPacker):
+class InternVL_DataPacker(ChatDataPacker):
     """
     Data protocol & processing logic for the InternVL for SFT and RL training.
     """
