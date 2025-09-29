@@ -1,0 +1,37 @@
+redis = "12800"
+
+[policy]
+model_name_or_path = "nvidia/C-RADIOv3-B"
+model_gradient_checkpointing = true
+
+[policy.parallelism]
+tp_size = 1
+cp_size = 1
+ep_size = 1
+dp_shard_size = -1   # FSDP-only, autodetect shard size based on WORLD_SIZE
+pp_size = 1
+dp_replicate_size = 1
+
+[train]
+resume = false
+epoch = 12
+param_dtype = "bfloat16"
+seed = 1234
+deterministic = true
+output_dir = "./outputs/cradio-v3-test"
+compile = false
+activation_offload = false  # TODO: try with offloading
+
+[train.train_policy]
+type = "sft"
+
+[train.ckpt]
+enable_checkpoint = true
+save_freq = 10
+max_keep = 2
+save_mode = "sync"
+
+[logging]
+logger = ['console']
+project_name = "cosmos_rl"
+experiment_name = "cradio-sft"

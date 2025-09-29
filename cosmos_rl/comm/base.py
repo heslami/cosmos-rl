@@ -101,7 +101,7 @@ class CommMixin:
             self.config.policy.model_name_or_path, trust_remote_code=True
         )
         is_vlm = getattr(hf_config, "vision_config", None) is not None
-        model_type = hf_config.model_type
+        model_type = util.get_model_type(hf_config)
 
         user_data_packer = metadata.get("user_data_packer", None)
         if user_data_packer:

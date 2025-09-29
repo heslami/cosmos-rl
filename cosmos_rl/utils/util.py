@@ -48,7 +48,7 @@ from huggingface_hub import (
     snapshot_download,
     HfFileSystem,
 )
-from transformers import AutoTokenizer
+from transformers import AutoConfig, AutoTokenizer
 import time
 import functools
 from cosmos_rl.utils.logging import logger
@@ -1219,3 +1219,14 @@ def setup_tokenizer(model_name_or_path: str) -> AutoTokenizer:
                 f"Failed to set pad_token_id with eos_token_id, error = {e}, ignore if not needed"
             )
     return tokenizer
+
+
+def get_model_type(hf_config: AutoConfig) -> str:
+    if hf_config.model_type:
+        return hf_config.model_type
+    elif any("radio" in arch.lower() for arch in hf_config.architectures):
+        return "cradio"
+    else:
+        raise ValueError(
+            f"Unknown model type {hf_config.model_type} for HF config {hf_config}"
+        )
