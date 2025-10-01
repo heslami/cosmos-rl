@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Tuple, Dict, Any
 from dataclasses import dataclass
 
 from transformers import AutoConfig
@@ -200,6 +200,7 @@ class CRadioV3Model(BaseModel):
             dn_label_noise_ratio=args.dn_label_noise_ratio,
             dn_labelbook_size=args.num_classes,
         )
+        self.model_args = args
 
     @classmethod
     def from_pretrained(
@@ -245,20 +246,28 @@ class CRadioV3Model(BaseModel):
             )
         )
 
-    def forward(self, x: torch.Tensor, position_ids: Optional[torch.Tensor] = None):
+    def forward(
+        self,
+        input_ids: Optional[torch.Tensor] = None,
+        targets: Optional[Dict[Any]] = None,
+        position_ids: Optional[torch.Tensor] = None,
+    ):
         """model forward function"""
-        x = self.model(x, target=None)
-        return x
+        return self.model(input_ids, target=targets if self.model_args.use_dn else None)
 
     @property
     def parallelize_fn(self):
-        pass
+        from .parallelize import parallelize_model
+
+        return parallelize_model, self
 
     def post_to_empty_hook(self, cosmos_config: CosmosConfig):
         return
 
     def separate_model_parts(self) -> List[nn.Module]:
-        return []
+        return [self]
+        # FIXME - split the model to account for different learning rate used for the backbone vs the the rest
+        # return [self.model.position_embedding, self.model.transformer, self.model.backbone]
 
     def load_hf_weights(
         self,
@@ -274,3 +283,7 @@ class CRadioV3Model(BaseModel):
             if name in pretrained_backbone_ckp:
                 with torch.no_grad():
                     tensor.data.copy_(pretrained_backbone_ckp[name])
+
+    def get_position_ids(self, **kwargs) -> Tuple[torch.Tensor, torch.Tensor, int]:
+        inputs = kwargs["input_ids"]
+        return torch.empty_like(inputs), inputs, 1

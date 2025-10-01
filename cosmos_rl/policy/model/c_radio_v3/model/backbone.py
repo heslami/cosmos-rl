@@ -11,8 +11,9 @@ from torchvision.models._utils import IntermediateLayerGetter
 
 from cosmos_rl.utils.logging import logger
 
-from .model_utils import load_pretrained_weights, get_global_rank
+from .model_utils import load_pretrained_weights
 from .vit_adapter import vit_base_cradiov3
+from ..utils import get_global_rank
 
 
 class BackboneBase(nn.Module):

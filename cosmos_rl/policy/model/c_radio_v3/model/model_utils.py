@@ -5,7 +5,6 @@ from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.distributed as dist
 
 import math
 
@@ -321,20 +320,3 @@ def load_pretrained_weights(pretrained_path, parser=None):
             state_dict[key] = value
 
     return state_dict
-
-
-def is_dist_avail_and_initialized():
-    """Check if DDP is initialized."""
-    is_dist = True
-    if not dist.is_available():
-        is_dist = False
-    else:
-        is_dist = dist.is_initialized() or False
-    return is_dist
-
-
-def get_global_rank():
-    """Get global rank."""
-    if not is_dist_avail_and_initialized():
-        return 0
-    return dist.get_rank()
