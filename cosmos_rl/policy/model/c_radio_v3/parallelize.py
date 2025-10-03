@@ -20,10 +20,7 @@ def _apply_fsdp(
     mesh: DeviceMesh,
 ):
     """Apply FSDP sharding to model layers using data parallel mesh."""
-    default_dp_mesh = mesh["dp_shard_cp"]
-    if default_dp_mesh is None:
-        return
-
+    default_dp_mesh = mesh["dp_shard"]
     fully_shard(model, mesh=default_dp_mesh, reshard_after_forward=True)
 
 
@@ -41,12 +38,13 @@ def parallelize_model(
     config: CosmosConfig,
     pp_loss_fn: Optional[Callable],
 ) -> nn.Module:
-    device_type, device_module = _get_device_info()
+    if parallel_dims.world_size > 1:
+        device_type, device_module = _get_device_info()
 
-    local_rank = int(os.getenv("LOCAL_RANK", 0))
-    device = torch.device(f"{device_type}:{local_rank}")
-    device_module.set_device(device)
-    mesh = parallel_dims.build_mesh(device_type)
-    _apply_fsdp(model, mesh)
+        local_rank = int(os.getenv("LOCAL_RANK", 0))
+        device = torch.device(f"{device_type}:{local_rank}")
+        device_module.set_device(device)
+        mesh = parallel_dims.build_mesh(device_type)
+        _apply_fsdp(model, mesh)
 
     return None, None

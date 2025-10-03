@@ -9,7 +9,7 @@ from timm.layers import trunc_normal_
 
 from .radio import RADIOBase
 from .adapter_modules import SpatialPriorModule, InteractionBlock, deform_inputs
-from ms_deformable_attn import MSDeformAttn
+from .ms_deformable_attn import MSDeformAttn
 
 
 class CRADIOAdapter(RADIOBase):

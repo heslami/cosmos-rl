@@ -6,11 +6,16 @@ import json
 from PIL import Image, ImageOps
 from typing import Any, Tuple, List, Optional
 
+from cosmos_rl.policy.config import Config
+
 from .coco import COCO
 
 
 class ODDataset(Dataset):
     """Base Object Detection Dataset Class."""
+
+    def setup(self, config: Config):
+        pass
 
     def __init__(
         self,

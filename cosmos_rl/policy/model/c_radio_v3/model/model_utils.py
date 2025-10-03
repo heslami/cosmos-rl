@@ -292,13 +292,15 @@ def load_pretrained_weights(pretrained_path, parser=None):
     #         raise PermissionError("Cannot access model state dict without the encryption key")
     #     temp = patch_decrypt_checkpoint(temp, key)
 
-    if "pytorch-lightning_version" not in temp and parser is not None:
-        temp["state_dict"] = parser(temp)
+    # if "pytorch-lightning_version" not in temp and parser is not None:
+    #     temp["state_dict"] = parser(temp)
 
     # for loading pretrained I3D weights released on
     # https://github.com/piergiaj/pytorch-i3d
-    if "state_dict" not in temp:
-        return temp
+    # if "state_dict" not in temp:
+    #     return temp
+
+    assert "state_dict" in temp
 
     state_dict = {}
     for key, value in list(temp["state_dict"].items()):

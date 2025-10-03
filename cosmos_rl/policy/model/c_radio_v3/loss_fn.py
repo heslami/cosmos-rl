@@ -9,6 +9,8 @@ from .loss.criterion import SetCriterion
 class DINOLoss(nn.Module):
     def __init__(self):
         """Internal function to build the loss function."""
+        super().__init__()
+
         # FIXME - make these config
         cls_loss_coef = 2.0
         bbox_loss_coef = 5.0

@@ -113,10 +113,13 @@ class Controller:
         self.config = config
         self.prompt_fetch_count = 0
         task_type = config.train.train_policy.type
-        self.tokenizer = util.retry(AutoTokenizer.from_pretrained)(
-            config.policy.model_name_or_path,
-            trust_remote_code=True,
-        )
+        if task_type == "sft":
+            self.tokenizer = None
+        else:
+            self.tokenizer = util.retry(AutoTokenizer.from_pretrained)(
+                config.policy.model_name_or_path,
+                trust_remote_code=True,
+            )
         self.policy_to_rollout_shard_mapper = ParallelizedShardMapper.get_instance(
             config
         )

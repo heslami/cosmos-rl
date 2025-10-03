@@ -1,5 +1,5 @@
 from typing import Optional, List, Tuple, Dict, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from transformers import AutoConfig
 import torch
@@ -19,7 +19,7 @@ from .model.position_encoding import (
 from .model.backbone import Joiner, Backbone
 from .model.deformable_transformer import DeformableTransformer
 from .model.dino import DINO
-from .model.model_utils import load_pretrained_weights
+# from .model.model_utils import load_pretrained_weights
 
 
 @dataclass
@@ -43,7 +43,7 @@ class CRadioV3Args:
     dropout_ratio: float = 0.3
     export: bool = False
     # activation_checkpoint=True, --> same as config.policy.model_gradient_checkpointing
-    return_interm_indices: List[int] = [1, 2, 3, 4]
+    return_interm_indices: List[int] = field(default_factory=lambda: [1, 2, 3, 4])
     pre_norm: bool = False
     num_patterns: int = 0
     decoder_layer_noise: bool = False
@@ -109,7 +109,7 @@ class CRadioV3Model(BaseModel):
         # Index 4 is not part of the backbone but taken from index 3 with conv 3x3 stride 2
         return_interm_indices = [r for r in args.return_interm_indices if r != 4]
         backbone_only = Backbone(
-            "",  # backbone,
+            "vit_base_cradiov3",  # backbone,
             "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar",  # pretrained_backbone_path,
             args.train_backbone,
             args.lsj_resolution,
@@ -249,11 +249,13 @@ class CRadioV3Model(BaseModel):
     def forward(
         self,
         input_ids: Optional[torch.Tensor] = None,
-        targets: Optional[Dict[Any]] = None,
+        targets: Optional[Dict[Any, Any]] = None,
         position_ids: Optional[torch.Tensor] = None,
     ):
         """model forward function"""
-        return self.model(input_ids, target=targets if self.model_args.use_dn else None)
+        return self.model(
+            input_ids, targets=targets if self.model_args.use_dn else None
+        )
 
     @property
     def parallelize_fn(self):
@@ -276,14 +278,21 @@ class CRadioV3Model(BaseModel):
         device: torch.device,
         revision: Optional[str] = None,
     ):
+        pass
         # for now, keep it hard-coded for a specific model and load the
-        pretrained_backbone_path = "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar"
-        pretrained_backbone_ckp = load_pretrained_weights(pretrained_backbone_path)
-        for name, tensor in self.state_dict().items():
-            if name in pretrained_backbone_ckp:
-                with torch.no_grad():
-                    tensor.data.copy_(pretrained_backbone_ckp[name])
+        # pretrained_backbone_path = "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar"
+        # pretrained_backbone_ckp = load_pretrained_weights(pretrained_backbone_path)
+        # for name, tensor in self.state_dict().items():
+        #     if name in pretrained_backbone_ckp:
+        #         with torch.no_grad():
+        #             tensor.data.copy_(pretrained_backbone_ckp[name])
 
     def get_position_ids(self, **kwargs) -> Tuple[torch.Tensor, torch.Tensor, int]:
         inputs = kwargs["input_ids"]
-        return torch.empty_like(inputs), inputs, 1
+        return torch.empty(1), inputs, 1
+
+    def apply_pipeline_split(self, pp_rank, pp_size):
+        pass
+
+    def get_nparams_and_flops(cls, seq_len: int) -> tuple[int, int]:
+        pass

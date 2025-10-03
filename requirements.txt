@@ -30,3 +30,4 @@ accelerate
 kernels
 timm
 open-clip-torch
+pycocotools

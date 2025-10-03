@@ -172,6 +172,7 @@ class Backbone(BackboneBase):
         #     ["resnet_34", "resnet_50"] + \
         #     ['efficientvit_b0', 'efficientvit_b1', 'efficientvit_b2', 'efficientvit_b3']
 
+        # FIXME - move to load_hf_weight function and WeighMapper
         pretrained_backbone_ckp = (
             load_pretrained_weights(pretrained_backbone_path)
             if pretrained_backbone_path

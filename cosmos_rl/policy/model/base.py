@@ -578,6 +578,9 @@ class ModelRegistry:
             ):
                 logger.info(f"Using cuda for model build of {model_name_or_path}.")
                 device = "cuda"
+            if model_type == "cradio":
+                logger.info(f"Using cuda for model build of {model_name_or_path}.")
+                device = "cuda"
             return device
 
         build_model_device = _get_device_for_model_build(hf_config)
