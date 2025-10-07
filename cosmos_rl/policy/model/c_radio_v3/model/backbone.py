@@ -269,7 +269,6 @@ class Backbone(BackboneBase):
 
         missing_keys = None
         if pretrained_backbone_ckp:
-            # import pdb; pdb.set_trace()
             _tmp_st_output = backbone.load_state_dict(
                 pretrained_backbone_ckp, strict=False
             )

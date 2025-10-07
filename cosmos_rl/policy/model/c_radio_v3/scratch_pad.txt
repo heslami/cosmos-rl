@@ -4,3 +4,331 @@ checkpoint keys from tar file:
 
 checkpoint keys from safetensors:
 'radio_model.input_conditioner.norm_mean', 'radio_model.input_conditioner.norm_std', 'radio_model.model.blocks.0.attn.proj.bias', 'radio_model.model.blocks.0.attn.proj.weight', 'radio_model.model.blocks.0.attn.qkv.bias', 'radio_model.model.blocks.0.attn.qkv.weight', 'radio_model.model.blocks.0.ls1.grandma', 'radio_model.model.blocks.0.ls2.grandma', 'radio_model.model.blocks.0.mlp.fc1.bias', 'radio_model.model.blocks.0.mlp.fc1.weight', 'radio_model.model.blocks.0.mlp.fc2.bias', 'radio_model.model.blocks.0.mlp.fc2.weight', 'radio_model.model.blocks.0.norm1.bias', 'radio_model.model.blocks.0.norm1.weight', 'radio_model.model.blocks.0.norm2.bias', 'radio_model.model.blocks.0.norm2.weight', 'radio_model.model.blocks.1.attn.proj.bias', 'radio_model.model.blocks.1.attn.proj.weight', 'radio_model.model.blocks.1.attn.qkv.bias', 'radio_model.model.blocks.1.attn.qkv.weight', 'radio_model.model.blocks.1.ls1.grandma', 'radio_model.model.blocks.1.ls2.grandma', 'radio_model.model.blocks.1.mlp.fc1.bias', 'radio_model.model.blocks.1.mlp.fc1.weight', 'radio_model.model.blocks.1.mlp.fc2.bias', 'radio_model.model.blocks.1.mlp.fc2.weight', 'radio_model.model.blocks.1.norm1.bias', 'radio_model.model.blocks.1.norm1.weight', 'radio_model.model.blocks.1.norm2.bias', 'radio_model.model.blocks.1.norm2.weight', 'radio_model.model.blocks.10.attn.proj.bias', 'radio_model.model.blocks.10.attn.proj.weight', 'radio_model.model.blocks.10.attn.qkv.bias', 'radio_model.model.blocks.10.attn.qkv.weight', 'radio_model.model.blocks.10.ls1.grandma', 'radio_model.model.blocks.10.ls2.grandma', 'radio_model.model.blocks.10.mlp.fc1.bias', 'radio_model.model.blocks.10.mlp.fc1.weight', 'radio_model.model.blocks.10.mlp.fc2.bias', 'radio_model.model.blocks.10.mlp.fc2.weight', 'radio_model.model.blocks.10.norm1.bias', 'radio_model.model.blocks.10.norm1.weight', 'radio_model.model.blocks.10.norm2.bias', 'radio_model.model.blocks.10.norm2.weight', 'radio_model.model.blocks.11.attn.proj.bias', 'radio_model.model.blocks.11.attn.proj.weight', 'radio_model.model.blocks.11.attn.qkv.bias', 'radio_model.model.blocks.11.attn.qkv.weight', 'radio_model.model.blocks.11.ls1.grandma', 'radio_model.model.blocks.11.ls2.grandma', 'radio_model.model.blocks.11.mlp.fc1.bias', 'radio_model.model.blocks.11.mlp.fc1.weight', 'radio_model.model.blocks.11.mlp.fc2.bias', 'radio_model.model.blocks.11.mlp.fc2.weight', 'radio_model.model.blocks.11.norm1.bias', 'radio_model.model.blocks.11.norm1.weight', 'radio_model.model.blocks.11.norm2.bias', 'radio_model.model.blocks.11.norm2.weight', 'radio_model.model.blocks.2.attn.proj.bias', 'radio_model.model.blocks.2.attn.proj.weight', 'radio_model.model.blocks.2.attn.qkv.bias', 'radio_model.model.blocks.2.attn.qkv.weight', 'radio_model.model.blocks.2.ls1.grandma', 'radio_model.model.blocks.2.ls2.grandma', 'radio_model.model.blocks.2.mlp.fc1.bias', 'radio_model.model.blocks.2.mlp.fc1.weight', 'radio_model.model.blocks.2.mlp.fc2.bias', 'radio_model.model.blocks.2.mlp.fc2.weight', 'radio_model.model.blocks.2.norm1.bias', 'radio_model.model.blocks.2.norm1.weight', 'radio_model.model.blocks.2.norm2.bias', 'radio_model.model.blocks.2.norm2.weight', 'radio_model.model.blocks.3.attn.proj.bias', 'radio_model.model.blocks.3.attn.proj.weight', 'radio_model.model.blocks.3.attn.qkv.bias', 'radio_model.model.blocks.3.attn.qkv.weight', 'radio_model.model.blocks.3.ls1.grandma', 'radio_model.model.blocks.3.ls2.grandma', 'radio_model.model.blocks.3.mlp.fc1.bias', 'radio_model.model.blocks.3.mlp.fc1.weight', 'radio_model.model.blocks.3.mlp.fc2.bias', 'radio_model.model.blocks.3.mlp.fc2.weight', 'radio_model.model.blocks.3.norm1.bias', 'radio_model.model.blocks.3.norm1.weight', 'radio_model.model.blocks.3.norm2.bias', 'radio_model.model.blocks.3.norm2.weight', 'radio_model.model.blocks.4.attn.proj.bias', 'radio_model.model.blocks.4.attn.proj.weight', 'radio_model.model.blocks.4.attn.qkv.bias', 'radio_model.model.blocks.4.attn.qkv.weight', 'radio_model.model.blocks.4.ls1.grandma', 'radio_model.model.blocks.4.ls2.grandma', 'radio_model.model.blocks.4.mlp.fc1.bias', 'radio_model.model.blocks.4.mlp.fc1.weight', 'radio_model.model.blocks.4.mlp.fc2.bias', 'radio_model.model.blocks.4.mlp.fc2.weight', 'radio_model.model.blocks.4.norm1.bias', 'radio_model.model.blocks.4.norm1.weight', 'radio_model.model.blocks.4.norm2.bias', 'radio_model.model.blocks.4.norm2.weight', 'radio_model.model.blocks.5.attn.proj.bias', 'radio_model.model.blocks.5.attn.proj.weight', 'radio_model.model.blocks.5.attn.qkv.bias', 'radio_model.model.blocks.5.attn.qkv.weight', 'radio_model.model.blocks.5.ls1.grandma', 'radio_model.model.blocks.5.ls2.grandma', 'radio_model.model.blocks.5.mlp.fc1.bias', 'radio_model.model.blocks.5.mlp.fc1.weight', 'radio_model.model.blocks.5.mlp.fc2.bias', 'radio_model.model.blocks.5.mlp.fc2.weight', 'radio_model.model.blocks.5.norm1.bias', 'radio_model.model.blocks.5.norm1.weight', 'radio_model.model.blocks.5.norm2.bias', 'radio_model.model.blocks.5.norm2.weight', 'radio_model.model.blocks.6.attn.proj.bias', 'radio_model.model.blocks.6.attn.proj.weight', 'radio_model.model.blocks.6.attn.qkv.bias', 'radio_model.model.blocks.6.attn.qkv.weight', 'radio_model.model.blocks.6.ls1.grandma', 'radio_model.model.blocks.6.ls2.grandma', 'radio_model.model.blocks.6.mlp.fc1.bias', 'radio_model.model.blocks.6.mlp.fc1.weight', 'radio_model.model.blocks.6.mlp.fc2.bias', 'radio_model.model.blocks.6.mlp.fc2.weight', 'radio_model.model.blocks.6.norm1.bias', 'radio_model.model.blocks.6.norm1.weight', 'radio_model.model.blocks.6.norm2.bias', 'radio_model.model.blocks.6.norm2.weight', 'radio_model.model.blocks.7.attn.proj.bias', 'radio_model.model.blocks.7.attn.proj.weight', 'radio_model.model.blocks.7.attn.qkv.bias', 'radio_model.model.blocks.7.attn.qkv.weight', 'radio_model.model.blocks.7.ls1.grandma', 'radio_model.model.blocks.7.ls2.grandma', 'radio_model.model.blocks.7.mlp.fc1.bias', 'radio_model.model.blocks.7.mlp.fc1.weight', 'radio_model.model.blocks.7.mlp.fc2.bias', 'radio_model.model.blocks.7.mlp.fc2.weight', 'radio_model.model.blocks.7.norm1.bias', 'radio_model.model.blocks.7.norm1.weight', 'radio_model.model.blocks.7.norm2.bias', 'radio_model.model.blocks.7.norm2.weight', 'radio_model.model.blocks.8.attn.proj.bias', 'radio_model.model.blocks.8.attn.proj.weight', 'radio_model.model.blocks.8.attn.qkv.bias', 'radio_model.model.blocks.8.attn.qkv.weight', 'radio_model.model.blocks.8.ls1.grandma', 'radio_model.model.blocks.8.ls2.grandma', 'radio_model.model.blocks.8.mlp.fc1.bias', 'radio_model.model.blocks.8.mlp.fc1.weight', 'radio_model.model.blocks.8.mlp.fc2.bias', 'radio_model.model.blocks.8.mlp.fc2.weight', 'radio_model.model.blocks.8.norm1.bias', 'radio_model.model.blocks.8.norm1.weight', 'radio_model.model.blocks.8.norm2.bias', 'radio_model.model.blocks.8.norm2.weight', 'radio_model.model.blocks.9.attn.proj.bias', 'radio_model.model.blocks.9.attn.proj.weight', 'radio_model.model.blocks.9.attn.qkv.bias', 'radio_model.model.blocks.9.attn.qkv.weight', 'radio_model.model.blocks.9.ls1.grandma', 'radio_model.model.blocks.9.ls2.grandma', 'radio_model.model.blocks.9.mlp.fc1.bias', 'radio_model.model.blocks.9.mlp.fc1.weight', 'radio_model.model.blocks.9.mlp.fc2.bias', 'radio_model.model.blocks.9.mlp.fc2.weight', 'radio_model.model.blocks.9.norm1.bias', 'radio_model.model.blocks.9.norm1.weight', 'radio_model.model.blocks.9.norm2.bias', 'radio_model.model.blocks.9.norm2.weight', 'radio_model.model.patch_generator.cls_token.token', 'radio_model.model.patch_generator.embedder.weight', 'radio_model.model.patch_generator.pos_embed', 'radio_model.model.reg_token', 'radio_model.summary_idxs'
+
+
+
+
+checkpoint:
+<root>
+├─ adaloss (END)
+├─ lean
+│  └─ _in_expected_losses (END)
+├─ weight_balance_mask (END)
+├─ input_conditioner
+│  ├─ norm_mean (END)
+│  └─ norm_std (END)
+├─ _loss_states
+│  ├─ .0
+│  │  ├─ .fwd_ct (END)
+│  │  ├─ .group_world_size (END)
+│  │  ├─ .num_samples (END)
+│  │  ├─ .inv_whiten (END)
+│  │  ├─ .whiten (END)
+│  │  ├─ .phis_alpha (END)
+│  │  ├─ .pole (END)
+│  │  └─ .tan_mean (END)
+│  ├─ .1
+│  │  ├─ .fwd_ct (END)
+│  │  ├─ .group_world_size (END)
+│  │  ├─ .num_samples (END)
+│  │  ├─ .inv_whiten (END)
+│  │  ├─ .whiten (END)
+│  │  ├─ .phis_alpha (END)
+│  │  ├─ .pole (END)
+│  │  └─ .tan_mean (END)
+│  ├─ .2
+│  │  ├─ .fwd_ct (END)
+│  │  ├─ .group_world_size (END)
+│  │  ├─ .num_samples (END)
+│  │  ├─ .inv_whiten (END)
+│  │  ├─ .whiten (END)
+│  │  ├─ .phis_alpha (END)
+│  │  ├─ .pole (END)
+│  │  └─ .tan_mean (END)
+│  └─ .3
+│     ├─ .fwd_ct (END)
+│     ├─ .group_world_size (END)
+│     ├─ .num_samples (END)
+│     ├─ .inv_whiten (END)
+│     ├─ .whiten (END)
+│     ├─ .phis_alpha (END)
+│     ├─ .pole (END)
+│     └─ .tan_mean (END)
+├─ _heads
+│  ├─ .dino_v2
+│  │  ├─ .fc1
+│  │  │  ├─ .bias (END)
+│  │  │  └─ .weight (END)
+│  │  ├─ .blocks
+│  │  │  ├─ .0
+│  │  │  │  ├─ .0
+│  │  │  │  │  ├─ .weight (END)
+│  │  │  │  │  └─ .bias (END)
+│  │  │  │  └─ .2
+│  │  │  │     ├─ .bias (END)
+│  │  │  │     └─ .weight (END)
+│  │  │  └─ .1
+│  │  │     ├─ .0
+│  │  │     │  ├─ .weight (END)
+│  │  │     │  └─ .bias (END)
+│  │  │     └─ .2
+│  │  │        ├─ .bias (END)
+│  │  │        └─ .weight (END)
+│  │  └─ .final
+│  │     ├─ .0
+│  │     │  ├─ .weight (END)
+│  │     │  └─ .bias (END)
+│  │     └─ .2
+│  │        ├─ .bias (END)
+│  │        └─ .weight (END)
+│  ├─ .siglip2 (structured identically to .dino_v2)
+│  │  ... (16 entries omitted for brevity)
+│  ├─ .clip (structured identically to .dino_v2)
+│  │  ... (16 entries omitted for brevity)
+│  └─ .sam (structured identically to .dino_v2)
+│     ... (16 entries omitted for brevity)
+├─ _feature_projections
+│  ├─ .dino_v2 (structured identically to _heads.dino_v2)
+│  │  ... (16 entries omitted for brevity)
+│  ├─ .siglip2 (structured identically to _heads.dino_v2)
+│  │  ... (16 entries omitted for brevity)
+│  ├─ .clip (structured identically to _heads.dino_v2)
+│  │  ... (16 entries omitted for brevity)
+│  └─ .sam (structured identically to _heads.dino_v2)
+│     ... (16 entries omitted for brevity)
+└─ base_model
+   ├─ reg_token (END)
+   ├─ blocks
+   │  ├─ .0
+   │  │  ├─ .norm1
+   │  │  │  ├─ .weight (END)
+   │  │  │  └─ .bias (END)
+   │  │  ├─ .attn
+   │  │  │  ├─ .qkv
+   │  │  │  │  ├─ .bias (END)
+   │  │  │  │  └─ .weight (END)
+   │  │  │  ├─ .proj
+   │  │  │  │  ├─ .bias (END)
+   │  │  │  │  └─ .weight (END)
+   │  │  │  └─ .ls1.gamma (END)
+   │  │  ├─ .norm2
+   │  │  │  ├─ .weight (END)
+   │  │  │  └─ .bias (END)
+   │  │  ├─ .mlp
+   │  │  │  ├─ .fc1
+   │  │  │  │  ├─ .bias (END)
+   │  │  │  │  └─ .weight (END)
+   │  │  │  ├─ .fc2
+   │  │  │  │  ├─ .bias (END)
+   │  │  │  │  └─ .weight (END)
+   │  │  │  └─ .ls2.gamma (END)
+   │  ├─ .1 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .2 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .3 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .4 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .5 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .6 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .7 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .8 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .9 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  ├─ .10 (structured identically to .0)
+   │  │  ... (14 entries omitted for brevity)
+   │  └─ .11 (structured identically to .0)
+   │     ... (14 entries omitted for brevity)
+   └─ patch_generator
+      ├─ .pos_embed (END)
+      ├─ .embedder.weight (END)
+      └─ .cls_token.token (END)
+
+
+backbone model codee:
+<root>
+├─ level_embed (END)
+├─ model
+│  ├─ blocks
+│  │  ├─ .0
+│  │  │  ├─ .norm1
+│  │  │  │  ├─ .weight (END)
+│  │  │  │  └─ .bias (END)
+│  │  │  ├─ .attn
+│  │  │  │  ├─ .qkv
+│  │  │  │  │  ├─ .weight (END)
+│  │  │  │  │  └─ .bias (END)
+│  │  │  │  ├─ .proj
+│  │  │  │  │  ├─ .weight (END)
+│  │  │  │  │  └─ .bias (END)
+│  │  │  │  └─ .ls1.gamma (END)
+│  │  │  ├─ .norm2
+│  │  │  │  ├─ .weight (END)
+│  │  │  │  └─ .bias (END)
+│  │  │  ├─ .mlp
+│  │  │  │  ├─ .fc1
+│  │  │  │  │  ├─ .weight (END)
+│  │  │  │  │  └─ .bias (END)
+│  │  │  │  ├─ .fc2
+│  │  │  │  │  ├─ .weight (END)
+│  │  │  │  │  └─ .bias (END)
+│  │  │  │  └─ .ls2.gamma (END)
+│  │  ├─ .1 ... .11 (structured identically to .0)
+│  │  │  (14 entries for each block, total 11 blocks omitted for brevity)
+│  └─ patch_generator
+│     ├─ .pos_embed (END)
+│     ├─ .embedder.weight (END)
+│     └─ .cls_token.token (END)
+├─ spm
+│  ├─ .stem
+│  │  ├─ .0.weight (END)
+│  │  ├─ .1
+│  │  │  ├─ .weight (END)
+│  │  │  ├─ .bias (END)
+│  │  │  ├─ .running_mean (END)
+│  │  │  ├─ .running_var (END)
+│  │  │  └─ .num_batches_tracked (END)
+│  │  ├─ .3.weight (END)
+│  │  ├─ .4 (structured identically to .1)
+│  │  │  ... (5 entries omitted)
+│  │  ├─ .6.weight (END)
+│  │  └─ .7 (structured identically to .1)
+│  │     ... (5 entries omitted)
+│  ├─ .conv2
+│  │  ├─ .0.weight (END)
+│  │  └─ .1 (structured identically to .1 above)
+│  │     ... (5 entries omitted)
+│  ├─ .conv3
+│  │  ├─ .0.weight (END)
+│  │  └─ .1 (structured identically to .1 above)
+│  │     ... (5 entries omitted)
+│  ├─ .conv4
+│  │  ├─ .0.weight (END)
+│  │  └─ .1 (structured identically to .1 above)
+│  │     ... (5 entries omitted)
+│  ├─ .fc1
+│  │  ├─ .weight (END)
+│  │  └─ .bias (END)
+│  ├─ .fc2
+│  │  ├─ .weight (END)
+│  │  └─ .bias (END)
+│  ├─ .fc3
+│  │  ├─ .weight (END)
+│  │  └─ .bias (END)
+│  └─ .fc4
+│     ├─ .weight (END)
+│     └─ .bias (END)
+├─ interactions
+│  ├─ .0
+│  │  ├─ .injector
+│  │  │  ├─ .query_norm
+│  │  │  │  ├─ .weight (END)
+│  │  │  │  └─ .bias (END)
+│  │  │  ├─ .feat_norm
+│  │  │  │  ├─ .weight (END)
+│  │  │  │  └─ .bias (END)
+│  │  │  ├─ .attn
+│  │  │  │  ├─ .sampling_offsets
+│  │  │  │  │  ├─ .weight (END)
+│  │  │  │  │  └─ .bias (END)
+│  │  │  │  ├─ .attention_weights
+│  │  │  │  │  ├─ .weight (END)
+│  │  │  │  │  └─ .bias (END)
+│  │  │  │  ├─ .value_proj
+│  │  │  │  │  ├─ .weight (END)
+│  │  │  │  │  └─ .bias (END)
+│  │  │  │  └─ .output_proj
+│  │  │  │     ├─ .weight (END)
+│  │  │  │     └─ .bias (END)
+│  │  │  └─ .ls.gamma (END)
+│  │  └─ .extractor
+│  │     ├─ .query_norm
+│  │     │  ├─ .weight (END)
+│  │     │  └─ .bias (END)
+│  │     ├─ .feat_norm
+│  │     │  ├─ .weight (END)
+│  │     │  └─ .bias (END)
+│  │     ├─ .attn
+│  │     │  ├─ .sampling_offsets
+│  │     │  │  ├─ .weight (END)
+│  │     │  │  └─ .bias (END)
+│  │     │  ├─ .attention_weights
+│  │     │  │  ├─ .weight (END)
+│  │     │  │  └─ .bias (END)
+│  │     │  ├─ .value_proj
+│  │     │  │  ├─ .weight (END)
+│  │     │  │  └─ .bias (END)
+│  │     │  └─ .output_proj
+│  │     │     ├─ .weight (END)
+│  │     │     └─ .bias (END)
+│  │     ├─ .ffn
+│  │     │  ├─ .fc1
+│  │     │  │  ├─ .weight (END)
+│  │     │  │  └─ .bias (END)
+│  │     │  ├─ .dwconv.dwconv
+│  │     │  │  ├─ .weight (END)
+│  │     │  │  └─ .bias (END)
+│  │     │  └─ .fc2
+│  │     │     ├─ .weight (END)
+│  │     │     └─ .bias (END)
+│  │     └─ .ffn_norm
+│  │        ├─ .weight (END)
+│  │        └─ .bias (END)
+│  ├─ .1 ... .2 (structured identically to .0)
+│  │  (34 entries for each, total 2 blocks omitted for brevity)
+│  └─ .3 (structured identically to .0, but with extra_extractors)
+│     ├─ .injector (26 entries omitted)
+│     ├─ .extractor (18 entries omitted)
+│     └─ .extra_extractors
+│        ├─ .0 (structured identically to .extractor, but without dwconv in ffn)
+│        │  ├─ .query_norm ... .attn.output_proj.bias (12 entries omitted)
+│        │  ├─ .ffn
+│        │  │  ├─ .fc1
+│        │  │  │  ├─ .weight (END)
+│        │  │  │  └─ .bias (END)
+│        │  │  ├─ .dwconv.dwconv
+│        │  │  │  ├─ .weight (END)
+│        │  │  │  └─ .bias (END)
+│        │  │  └─ .fc2
+│        │  │     ├─ .weight (END)
+│        │  │     └─ .bias (END)
+│        │  └─ .ffn_norm
+│        │     ├─ .weight (END)
+│        │     └─ .bias (END)
+│        └─ .1 (structured identically to .0)
+│           (18 entries omitted for brevity)
+├─ up
+│  ├─ .weight (END)
+│  └─ .bias (END)
+├─ out_norm0
+│  ├─ .weight (END)
+│  ├─ .bias (END)
+│  ├─ .running_mean (END)
+│  ├─ .running_var (END)
+│  └─ .num_batches_tracked (END)
+├─ out_norm1
+│  ... (5 entries omitted, structured identically to out_norm0)
+├─ out_norm2
+│  ... (5 entries omitted, structured identically to out_norm0)
+├─ out_norm3
+│  ... (5 entries omitted, structured identically to out_norm0)
+├─ fc_summary
+│  ├─ .weight (END)
+│  └─ .bias (END)
+├─ conv1
+│  ├─ .weight (END)
+│  └─ .bias (END)
+├─ conv2
+│  ├─ .weight (END)
+│  └─ .bias (END)
+├─ conv3
+│  ├─ .weight (END)
+│  └─ .bias (END)
+└─ conv4
+   ├─ .weight (END)
+   └─ .bias (END)

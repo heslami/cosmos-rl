@@ -211,8 +211,9 @@ class DeformableTransformer(nn.Module):
 
         if num_feature_levels > 1:
             if self.num_encoder_layers > 0:
+                # FIXME -- look into why torch.Tensor was used
                 self.level_embed = nn.Parameter(
-                    torch.Tensor(num_feature_levels, d_model)
+                    torch.empty(num_feature_levels, d_model)
                 )
             else:
                 self.level_embed = None
@@ -239,8 +240,9 @@ class DeformableTransformer(nn.Module):
             self.enc_output_norm = nn.LayerNorm(d_model)
 
             if two_stage_pat_embed > 0:
+                # FIXME -- look into why torch.Tensor was used
                 self.pat_embed_for_2stage = nn.Parameter(
-                    torch.Tensor(two_stage_pat_embed, d_model)
+                    torch.empty(two_stage_pat_embed, d_model)
                 )
                 nn.init.normal_(self.pat_embed_for_2stage)
 

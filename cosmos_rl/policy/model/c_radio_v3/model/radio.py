@@ -293,7 +293,6 @@ class ViTPatchGenerator(nn.Module):
         unexpected_keys,
         error_msgs,
     ):
-        # import pdb; pdb.set_trace()
         if self.abs_pos:
             self._load_embed(state_dict[f"{prefix}pos_embed"], self.pos_embed)
 

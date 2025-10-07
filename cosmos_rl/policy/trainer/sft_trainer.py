@@ -807,7 +807,6 @@ class SFTTrainer(Trainer):
                         #         )
                         # return
                         #########################################################################################
-
                         with self.act_offloading_ctx_manager:
                             logits = self.model(**batch)
 

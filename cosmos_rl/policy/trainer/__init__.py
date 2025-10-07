@@ -96,8 +96,9 @@ class Trainer(CommMixin):
             self.pp_scheduler, self.pp_scheduler_val = parallelize_fn(
                 model, parallel_dims, config, pp_loss_fn=self.pp_loss_fn
             )
-            if not config.train.fsdp_offload:
-                model.to_empty(device=self.device)
+            # import pdb; pdb.set_trace()
+            # if not config.train.fsdp_offload:
+            #     model.to_empty(device=self.device)
             model.post_to_empty_hook(config)
             if config.policy.lora is not None:
                 from cosmos_rl.policy.lora.plugin import reinitialize_lora_params
@@ -111,7 +112,7 @@ class Trainer(CommMixin):
             torch.cuda.empty_cache()
             self.model_parts = model.separate_model_parts()
             self.model = model
-            util.add_nan_checks(model)
+            # util.add_nan_checks(model)
         except Exception as e:
             import traceback
 
