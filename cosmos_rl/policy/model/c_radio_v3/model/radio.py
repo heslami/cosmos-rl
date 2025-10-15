@@ -256,6 +256,7 @@ class ViTPatchGenerator(nn.Module):
         self.patch_normalizer = (
             nn.LayerNorm(embed_dim) if normalize_patches else nn.Identity()
         )
+        self.reset_parameters()
 
     def reset_parameters(self):
         if self.abs_pos:

@@ -5,6 +5,7 @@ from transformers import AutoConfig
 
 from cosmos_rl.policy.model.base import WeightMapper
 from cosmos_rl.utils.parallelism import ParallelDims
+from cosmos_rl.utils.logging import logger
 
 
 def map_key_from_hf(name: str):
@@ -23,9 +24,19 @@ def convert_weight_from_hf(
         dp_shard_rank = 0
         dp_shard_size = 1
 
+    logger.info(
+        f"dp_shard_rank = {dp_shard_rank}, parallel_dims.mesh = {parallel_dims.mesh}"
+    )
+
     dest_name = map_key_from_hf(name)
 
-    shard = torch.chunk(tensor, dp_shard_size, dim=0)[dp_shard_rank]
+    if tensor.shape[0] % dp_shard_size == 0:
+        shard = tensor.tensor_split(dp_shard_size, dim=0)[dp_shard_rank]
+    else:
+        chunk_size = (tensor.shape[0] + dp_shard_size - 1) // dp_shard_size
+        shard = tensor[dp_shard_rank * chunk_size : (dp_shard_rank + 1) * chunk_size]
+
+    logger.info(f"tensor shape = {tensor.shape}, final shard shape = {shard.shape}")
 
     return dest_name, shard.contiguous()
 

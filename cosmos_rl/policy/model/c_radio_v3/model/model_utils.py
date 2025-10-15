@@ -357,7 +357,12 @@ class LinearCopy(nn.Linear):
         assert (self.bias_value is not None) != (self.bias_compute_fn is not None)
         if self.bias_compute_fn is not None:
             with torch.no_grad():
-                self.bias.copy_(self.bias_compute_fn().to(self.bias.device))
+                if isinstance(self.bias, torch.distributed.tensor.DTensor):
+                    idx = get_shard_indices(self.bias)
+                    local = self.bias.to_local()
+                    local.copy_(self.bias_compute_fn()[idx].to(self.bias.device))
+                else:
+                    self.bias.copy_(self.bias_compute_fn().to(self.bias.device))
         else:
             nn.init.constant_(self.bias, self.bias_value)
 
@@ -366,3 +371,23 @@ class Conv2dCopy(nn.Conv2d):
     def reset_parameters(self):
         nn.init.xavier_uniform_(self.weight, gain=1)
         nn.init.constant_(self.bias, 0)
+
+
+def get_shard_indices(dtensor: torch.distributed.tensor.DTensor):
+    mesh = dtensor.device_mesh
+    placements = dtensor.placements
+    global_shape = dtensor.shape
+    coord = mesh.get_coordinate()
+
+    indices = []
+    for i, p in enumerate(placements):
+        if isinstance(p, torch.distributed.tensor.Shard):
+            dim = p.dim
+            n_chunks = mesh.size(i)
+            chunk_size = (global_shape[dim] + n_chunks - 1) // n_chunks
+            start = coord[i] * chunk_size
+            end = min(start + chunk_size, global_shape[dim])
+            indices.append(slice(start, end))
+        else:
+            indices.append(slice(None))
+    return tuple(indices)
