@@ -39,6 +39,7 @@ enable_checkpoint = true
 save_freq = 10
 max_keep = 2
 save_mode = "sync"
+export_safetensors = false
 
 [logging]
 logger = ['console']

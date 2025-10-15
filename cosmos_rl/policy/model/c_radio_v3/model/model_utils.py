@@ -1,6 +1,6 @@
 """Model functions."""
 
-from typing import Optional
+from typing import Optional, Callable
 
 import torch
 import torch.nn as nn
@@ -100,6 +100,8 @@ class RandomBoxPerturber:
             w_noise_scale (float): scale of noise applied to w dimension
             h_noise_scale (float): scale of noise applied to h dimension
         """
+        # FIXME
+        assert False, "legacy torch.Tensor constructor does not work, also needs reset_parameters implementation"
         self.noise_scale = torch.Tensor(
             [x_noise_scale, y_noise_scale, w_noise_scale, h_noise_scale]
         )
@@ -276,49 +278,91 @@ def tensor_from_tensor_list(tensor_list, targets):
     return tensors
 
 
-def load_pretrained_weights(pretrained_path, parser=None):
-    """To get over pytorch lightning module in the checkpoint state_dict.
+# def load_pretrained_weights(pretrained_path, parser=None):
+#     """To get over pytorch lightning module in the checkpoint state_dict.
 
-    Args:
-        pretrained_path (str): path to the pretrained model.
-        parser (function): function to parse the state dict for a custom model.
+#     Args:
+#         pretrained_path (str): path to the pretrained model.
+#         parser (function): function to parse the state dict for a custom model.
+#     """
+#     temp = torch.load(pretrained_path, map_location="cpu", weights_only=False)
+
+#     # if temp.get("state_dict_encrypted", False):
+#     #     # Retrieve encryption key from TLTPyTorchCookbook.
+#     #     key = TLTPyTorchCookbook.get_passphrase()
+#     #     if key is None:
+#     #         raise PermissionError("Cannot access model state dict without the encryption key")
+#     #     temp = patch_decrypt_checkpoint(temp, key)
+
+#     # if "pytorch-lightning_version" not in temp and parser is not None:
+#     #     temp["state_dict"] = parser(temp)
+
+#     # for loading pretrained I3D weights released on
+#     # https://github.com/piergiaj/pytorch-i3d
+#     # if "state_dict" not in temp:
+#     #     return temp
+
+#     assert "state_dict" in temp
+
+#     state_dict = {}
+#     for key, value in list(temp["state_dict"].items()):
+#         if "module" in key:
+#             new_key = ".".join(key.split(".")[1:])
+#             state_dict[new_key] = value
+#         elif key.startswith("backbone."):
+#             # MMLab compatible weight loading
+#             new_key = key[9:]
+#             state_dict[new_key] = value
+#         elif key.startswith("model."):
+#             # MAE compatible weight loading
+#             new_key = key[len("model.") :]
+#             state_dict[new_key] = value
+#         elif key.startswith("ema_"):
+#             # Do not include ema params from MMLab
+#             continue
+#         else:
+#             state_dict[key] = value
+
+#     return state_dict
+
+
+class LinearCopy(nn.Linear):
     """
-    temp = torch.load(pretrained_path, map_location="cpu", weights_only=False)
+    Copies the nn.Linear, with custom constant initialization for weight and bias.
+    """
 
-    # if temp.get("state_dict_encrypted", False):
-    #     # Retrieve encryption key from TLTPyTorchCookbook.
-    #     key = TLTPyTorchCookbook.get_passphrase()
-    #     if key is None:
-    #         raise PermissionError("Cannot access model state dict without the encryption key")
-    #     temp = patch_decrypt_checkpoint(temp, key)
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        bias_value: Optional[float] = None,
+        bias_compute_fn: Optional[Callable] = None,
+        weight_value: Optional[float] = None,
+        uniform_weight: bool = False,
+    ):
+        self.bias_value = bias_value
+        self.bias_compute_fn = bias_compute_fn
+        self.weight_value = weight_value
+        self.uniform_weight = uniform_weight
+        super().__init__(in_features, out_features)
 
-    # if "pytorch-lightning_version" not in temp and parser is not None:
-    #     temp["state_dict"] = parser(temp)
-
-    # for loading pretrained I3D weights released on
-    # https://github.com/piergiaj/pytorch-i3d
-    # if "state_dict" not in temp:
-    #     return temp
-
-    assert "state_dict" in temp
-
-    state_dict = {}
-    for key, value in list(temp["state_dict"].items()):
-        if "module" in key:
-            new_key = ".".join(key.split(".")[1:])
-            state_dict[new_key] = value
-        elif key.startswith("backbone."):
-            # MMLab compatible weight loading
-            new_key = key[9:]
-            state_dict[new_key] = value
-        elif key.startswith("model."):
-            # MAE compatible weight loading
-            new_key = key[len("model.") :]
-            state_dict[new_key] = value
-        elif key.startswith("ema_"):
-            # Do not include ema params from MMLab
-            continue
+    def reset_parameters(self):
+        if self.uniform_weight:
+            nn.init.xavier_uniform_(self.weight)
+        elif self.weight_value is not None:
+            nn.init.constant_(self.weight, self.weight_value)
         else:
-            state_dict[key] = value
+            # rollback to default for nn.Linear
+            nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        assert (self.bias_value is not None) != (self.bias_compute_fn is not None)
+        if self.bias_compute_fn is not None:
+            with torch.no_grad():
+                self.bias.copy_(self.bias_compute_fn().to(self.bias.device))
+        else:
+            nn.init.constant_(self.bias, self.bias_value)
 
-    return state_dict
+
+class Conv2dCopy(nn.Conv2d):
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.weight, gain=1)
+        nn.init.constant_(self.bias, 0)

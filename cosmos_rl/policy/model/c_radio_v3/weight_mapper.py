@@ -4,6 +4,30 @@ import torch
 from transformers import AutoConfig
 
 from cosmos_rl.policy.model.base import WeightMapper
+from cosmos_rl.utils.parallelism import ParallelDims
+
+
+def map_key_from_hf(name: str):
+    return name[len("radio_model.") :].replace(".grandma", ".gamma")
+
+
+def convert_weight_from_hf(
+    tensor: torch.Tensor,
+    name: str,
+    parallel_dims: ParallelDims,
+) -> Tuple[str, torch.Tensor]:
+    if parallel_dims.dp_shard_enabled:
+        dp_shard_rank = parallel_dims.mesh["dp_shard"].get_local_rank()
+        dp_shard_size = parallel_dims.mesh["dp_shard"].size()
+    else:
+        dp_shard_rank = 0
+        dp_shard_size = 1
+
+    dest_name = map_key_from_hf(name)
+
+    shard = torch.chunk(tensor, dp_shard_size, dim=0)[dp_shard_rank]
+
+    return dest_name, shard.contiguous()
 
 
 class CRadioV3WeightMapper(WeightMapper):
@@ -18,3 +42,6 @@ class CRadioV3WeightMapper(WeightMapper):
 
     def policy_map_local_key_to_hf_key(self, name: str) -> str:
         pass
+
+    def policy_maybe_decompose_weights_to_hf_naming(self, name, param):
+        raise NotImplementedError("checkpoint to safetensors not supported yet")

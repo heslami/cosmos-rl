@@ -1,16 +1,19 @@
 from typing import Optional, List, Tuple, Dict, Any
 from dataclasses import dataclass, field
+import os
 
 from transformers import AutoConfig
 import torch
 import torch.nn as nn
 
+from cosmos_rl.utils.logging import logger
 from cosmos_rl.policy.config import Config as CosmosConfig
 from cosmos_rl.policy.model.base import BaseModel, ModelRegistry
 from cosmos_rl.utils.parallelism import ParallelDims
+import cosmos_rl.utils.util as util
 
 from .data_packer import CRadioV3DataPacker
-from .weight_mapper import CRadioV3WeightMapper
+from .weight_mapper import CRadioV3WeightMapper, convert_weight_from_hf
 
 from .model.position_encoding import (
     PositionEmbeddingSineHWExport,
@@ -110,7 +113,7 @@ class CRadioV3Model(BaseModel):
         return_interm_indices = [r for r in args.return_interm_indices if r != 4]
         backbone_only = Backbone(
             "vit_base_cradiov3",  # backbone,
-            "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar",  # pretrained_backbone_path,
+            # "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar",  # pretrained_backbone_path,
             args.train_backbone,
             args.lsj_resolution,
             return_interm_indices,
@@ -264,7 +267,12 @@ class CRadioV3Model(BaseModel):
         return parallelize_model, self
 
     def post_to_empty_hook(self, cosmos_config: CosmosConfig):
-        return
+        nn.MultiheadAttention.reset_parameters = nn.MultiheadAttention._reset_parameters
+        self.model.apply(
+            lambda m: m.reset_parameters() if hasattr(m, "reset_parameters") else None
+        )
+        # initialize the ViT adapter again since reset_parameter call above recursively overwrites some of submodules
+        self.model.backbone[0].body.reset_parameters()
 
     def separate_model_parts(self) -> List[nn.Module]:
         return [self]
@@ -278,14 +286,76 @@ class CRadioV3Model(BaseModel):
         device: torch.device,
         revision: Optional[str] = None,
     ):
-        pass
-        # for now, keep it hard-coded for a specific model and load the
-        # pretrained_backbone_path = "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar"
-        # pretrained_backbone_ckp = load_pretrained_weights(pretrained_backbone_path)
-        # for name, tensor in self.state_dict().items():
-        #     if name in pretrained_backbone_ckp:
-        #         with torch.no_grad():
-        #             tensor.data.copy_(pretrained_backbone_ckp[name])
+        model_path = util.resolve_model_path(model_name_or_path, revision=revision)
+        safetensors_files = [
+            f for f in os.listdir(model_path) if f.endswith(".safetensors")
+        ]
+
+        # FIXME: check if we need to replace with checkpoint wrapper names
+
+        backbone = self.model.backbone[0].body
+        backbone_state_dict = backbone.state_dict()
+        used_checkpoint_names = set()
+        for f in safetensors_files:
+            ckpt = util.safe_open(
+                os.path.join(model_path, f), framework="pt", device=str(device)
+            )
+            for name in ckpt.keys():
+                ckpt_tensor = ckpt.get_tensor(name)
+                dest_name, sharded_tensor = convert_weight_from_hf(
+                    ckpt_tensor, name, parallel_dims
+                )
+                if dest_name not in backbone_state_dict:
+                    logger.info(
+                        f"Weight '{dest_name}' is discarded from the HF weights"
+                    )
+                    continue
+                target_tensor = backbone_state_dict[dest_name]
+                local_view = (
+                    target_tensor.to_local()
+                    if isinstance(target_tensor, torch.distributed.tensor.DTensor)
+                    else target_tensor
+                )
+                assert (
+                    local_view.shape == sharded_tensor.shape
+                ), f"Shape mismatch: {local_view.shape} != {sharded_tensor.shape} for {dest_name}"
+                with torch.no_grad():
+                    local_view.copy_(sharded_tensor)
+                used_checkpoint_names.add(dest_name)
+
+        for name, parameter in backbone.named_parameters():
+            if name in used_checkpoint_names and not self.model_args.train_backbone:
+                parameter.requires_grad_(False)
+
+        # pretrained_backbone_ckp = (
+        #     load_pretrained_weights(pretrained_backbone_path)
+        #     if pretrained_backbone_path
+        #     else None
+        # )
+
+        # if pretrained_backbone_ckp:
+        #     pretrained_backbone_ckp = {
+        #         k.replace("base_model.", "model."): v
+        #         for k, v in pretrained_backbone_ckp.items()
+        #     }
+
+        # missing_keys = None
+        # if pretrained_backbone_ckp:
+        #     _tmp_st_output = backbone.load_state_dict(
+        #         pretrained_backbone_ckp, strict=False
+        #     )
+        #     missing_keys = list(_tmp_st_output[0])
+        #     if get_global_rank() == 0:
+        #         logger.info(
+        #             f"Loaded pretrained weights from {pretrained_backbone_path}"
+        #         )
+        #         logger.info(f"{_tmp_st_output}")
+
+        # if not missing_keys:
+        #     missing_keys = []
+        # for name, parameter in backbone.named_parameters():
+        #     if not any(p in name for p in missing_keys) and not train_backbone:
+        #         parameter.requires_grad_(False)
 
     def get_position_ids(self, **kwargs) -> Tuple[torch.Tensor, torch.Tensor, int]:
         inputs = kwargs["input_ids"]

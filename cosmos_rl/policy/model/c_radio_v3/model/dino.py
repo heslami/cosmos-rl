@@ -10,7 +10,13 @@ from torch import nn
 from cosmos_rl.utils.logging import logger
 
 from .dn_components import prepare_for_cdn, dn_post_process
-from .model_utils import MLP, inverse_sigmoid, tensor_from_tensor_list
+from .model_utils import (
+    MLP,
+    inverse_sigmoid,
+    tensor_from_tensor_list,
+    LinearCopy,
+    Conv2dCopy,
+)
 
 
 class DINO(nn.Module):
@@ -119,14 +125,20 @@ class DINO(nn.Module):
         self.dec_pred_class_embed_share = dec_pred_class_embed_share
         self.dec_pred_bbox_embed_share = dec_pred_bbox_embed_share
         # prepare class & box embed
-        _class_embed = nn.Linear(hidden_dim, num_classes)
-        _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
-        # init the two embed layers
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
-        _class_embed.bias.data = torch.ones(self.num_classes) * bias_value
-        nn.init.constant_(_bbox_embed.layers[-1].weight.data, 0)
-        nn.init.constant_(_bbox_embed.layers[-1].bias.data, 0)
+        _class_embed = LinearCopy(hidden_dim, num_classes, bias_value=bias_value)
+        _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
+        _bbox_embed.layers[-1] = LinearCopy(
+            _bbox_embed.layers[-1].in_features,
+            _bbox_embed.layers[-1].out_features,
+            bias_value=0,
+            weight_value=0,
+        )
+        # init the two embed layers
+        # _class_embed.bias.data = torch.ones(self.num_classes) * bias_value
+        # nn.init.constant_(_bbox_embed.layers[-1].weight.data, 0)
+        # nn.init.constant_(_bbox_embed.layers[-1].bias.data, 0)
 
         if dec_pred_bbox_embed_share:
             box_embed_layerlist = [
@@ -179,6 +191,7 @@ class DINO(nn.Module):
             self.refpoint_embed = None
             if self.two_stage_add_query_num > 0:
                 self.init_ref_points(two_stage_add_query_num)
+                raise ValueError("parameter initialization not meta-safe")
 
         self.decoder_sa_type = decoder_sa_type
         assert decoder_sa_type in ["sa", "ca_label", "ca_content"]
@@ -191,7 +204,7 @@ class DINO(nn.Module):
                 layer.label_embedding = None
             self.label_embedding = None
 
-        self._reset_parameters()
+        # self.reset_parameters()
 
     def prepare_channel_mapper(self, num_feature_levels, hidden_dim, two_stage_type):
         """Create Channel Mapper style for DETR-based model.
@@ -211,14 +224,14 @@ class DINO(nn.Module):
                 in_channels = self.backbone.num_channels[_]
                 input_proj_list.append(
                     nn.Sequential(
-                        nn.Conv2d(in_channels, hidden_dim, kernel_size=1),
+                        Conv2dCopy(in_channels, hidden_dim, kernel_size=1),
                         nn.GroupNorm(32, hidden_dim),
                     )
                 )
             for _ in range(num_feature_levels - num_backbone_outs):
                 input_proj_list.append(
                     nn.Sequential(
-                        nn.Conv2d(
+                        Conv2dCopy(
                             in_channels, hidden_dim, kernel_size=3, stride=2, padding=1
                         ),
                         nn.GroupNorm(32, hidden_dim),
@@ -233,7 +246,7 @@ class DINO(nn.Module):
         return nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.Conv2d(
+                    Conv2dCopy(
                         self.backbone.num_channels[-1], hidden_dim, kernel_size=1
                     ),
                     nn.GroupNorm(32, hidden_dim),
@@ -241,11 +254,11 @@ class DINO(nn.Module):
             ]
         )
 
-    def _reset_parameters(self):
-        # init input_proj
-        for proj in self.input_proj:
-            nn.init.xavier_uniform_(proj[0].weight, gain=1)
-            nn.init.constant_(proj[0].bias, 0)
+    # def reset_parameters(self):
+    #     # init input_proj
+    #     for proj in self.input_proj:
+    #         nn.init.xavier_uniform_(proj[0].weight, gain=1)
+    #         nn.init.constant_(proj[0].bias, 0)
 
     def init_ref_points(self, use_num_queries):
         """Initialize reference points"""

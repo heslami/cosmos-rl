@@ -150,7 +150,7 @@ checkpoint:
       └─ .cls_token.token (END)
 
 
-backbone model codee:
+backbone model code:
 <root>
 ├─ level_embed (END)
 ├─ model
@@ -332,3 +332,47 @@ backbone model codee:
 └─ conv4
    ├─ .weight (END)
    └─ .bias (END)
+
+
+safetensor names:
+<root>
+└─ radio_model
+   ├─ .input_conditioner
+   │  ├─ .norm_mean (END)
+   │  └─ .norm_std (END)
+   └─ .model
+      ├─ .blocks
+      │  ├─ .0
+      │  │  ├─ .attn
+      │  │  │  ├─ .proj
+      │  │  │  │  ├─ .bias (END)
+      │  │  │  │  └─ .weight (END)
+      │  │  │  ├─ .qkv
+      │  │  │  │  ├─ .bias (END)
+      │  │  │  │  └─ .weight (END)
+      │  │  │  └─ .ls1.grandma (END)
+      │  │  ├─ .ls2.grandma (END)
+      │  │  ├─ .mlp
+      │  │  │  ├─ .fc1
+      │  │  │  │  ├─ .bias (END)
+      │  │  │  │  └─ .weight (END)
+      │  │  │  └─ .fc2
+      │  │  │     ├─ .bias (END)
+      │  │  │     └─ .weight (END)
+      │  │  ├─ .norm1
+      │  │  │  ├─ .bias (END)
+      │  │  │  └─ .weight (END)
+      │  │  └─ .norm2
+      │  │     ├─ .bias (END)
+      │  │     └─ .weight (END)
+      │  ├─ .1 ... .11 (Structured identically to .0)
+      │  │  (14 entries for each of blocks 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
+      │  │   are omitted for brevity, total 154 entries)
+      ├─ .patch_generator
+      │  ├─ .cls_token.token (END)
+      │  ├─ .embedder.weight (END)
+      │  └─ .pos_embed (END)
+      ├─ .reg_token (END)
+      └─ .summary_idxs (END)
+
+

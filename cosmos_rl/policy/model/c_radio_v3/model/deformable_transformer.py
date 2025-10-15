@@ -221,7 +221,7 @@ class DeformableTransformer(nn.Module):
         self.embed_init_tgt = embed_init_tgt
         if (two_stage_type != "no" and embed_init_tgt) or (two_stage_type == "no"):
             self.tgt_embed = nn.Embedding(self.num_queries, d_model)
-            nn.init.normal_(self.tgt_embed.weight.data)
+            # nn.init.normal_(self.tgt_embed.weight.data)
         else:
             self.tgt_embed = None
 
@@ -244,7 +244,7 @@ class DeformableTransformer(nn.Module):
                 self.pat_embed_for_2stage = nn.Parameter(
                     torch.empty(two_stage_pat_embed, d_model)
                 )
-                nn.init.normal_(self.pat_embed_for_2stage)
+                # nn.init.normal_(self.pat_embed_for_2stage)
 
             if two_stage_add_query_num > 0:
                 self.tgt_embed = nn.Embedding(self.two_stage_add_query_num, d_model)
@@ -272,7 +272,7 @@ class DeformableTransformer(nn.Module):
                     dec_layer_number[0] == num_queries * num_patterns
                 ), f"dec_layer_number[0]({dec_layer_number[0]}) != num_queries({num_queries}) * num_patterns({num_patterns})"
 
-        self._reset_parameters()
+        self.reset_parameters()
 
         self.rm_self_attn_layers = rm_self_attn_layers
         if rm_self_attn_layers is not None:
@@ -291,14 +291,15 @@ class DeformableTransformer(nn.Module):
             assert any([i in ["enc_ref", "enc_tgt", "dec"] for i in rm_detach])
         self.decoder.rm_detach = rm_detach
 
-    def _reset_parameters(self):
+    def reset_parameters(self):
         """Reset parmaeters"""
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
-        for m in self.modules():
-            if isinstance(m, MSDeformAttn):
-                m._reset_parameters()
+        # FIXME - make sure model.apply(...) calls the reset_parameters of submodules
+        # for m in self.modules():
+        #     if isinstance(m, MSDeformAttn):
+        #         m._reset_parameters()
         if self.num_feature_levels > 1 and self.level_embed is not None:
             nn.init.normal_(self.level_embed)
 
@@ -323,10 +324,11 @@ class DeformableTransformer(nn.Module):
         self.refpoint_embed = nn.Embedding(use_num_queries, 4)
 
         if self.random_refpoints_xy:
-            self.refpoint_embed.weight.data[:, :2].uniform_(0, 1)
-            self.refpoint_embed.weight.data[:, :2] = inverse_sigmoid(
-                self.refpoint_embed.weight.data[:, :2]
-            )
+            # FIXME - why do we need initialization if reset_parameter is re-initializng to xavier_uniform?
+            # self.refpoint_embed.weight.data[:, :2].uniform_(0, 1)
+            # self.refpoint_embed.weight.data[:, :2] = inverse_sigmoid(
+            #     self.refpoint_embed.weight.data[:, :2]
+            # )
             self.refpoint_embed.weight.data[:, :2].requires_grad = False
 
     def forward(self, srcs, masks, refpoint_embed, pos_embeds, tgt, attn_mask=None):

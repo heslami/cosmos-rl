@@ -5,9 +5,10 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.init import xavier_uniform_, constant_
 
 from cosmos_rl.utils.logging import logger
+
+from .model_utils import LinearCopy
 
 
 def _is_power_of_2(n):
@@ -22,6 +23,22 @@ def _is_power_of_2(n):
     if (not isinstance(n, int)) or (n < 0):
         raise ValueError(f"invalid input for _is_power_of_2: {n} (type: {type(n)})")
     return (n & (n - 1) == 0) and n != 0
+
+
+def bias_compute_fn(n_heads, n_levels, n_points):
+    def bias():
+        thetas = torch.arange(n_heads, dtype=torch.float32) * (2.0 * math.pi / n_heads)
+        grid_init = torch.stack([thetas.cos(), thetas.sin()], -1)
+        grid_init = (
+            (grid_init / grid_init.abs().max(-1, keepdim=True)[0])
+            .view(n_heads, 1, 1, 2)
+            .repeat(1, n_levels, n_points, 1)
+        )
+        for i in range(n_points):
+            grid_init[:, :, i, :] *= i + 1
+        return grid_init.view(-1)
+
+    return bias
 
 
 class MSDeformAttn(nn.Module):
@@ -59,39 +76,27 @@ class MSDeformAttn(nn.Module):
         self.n_points = n_points
         self.ratio = ratio
 
-        self.sampling_offsets = nn.Linear(d_model, n_heads * n_levels * n_points * 2)
-        self.attention_weights = nn.Linear(d_model, n_heads * n_levels * n_points)
-        self.value_proj = nn.Linear(d_model, int(d_model * ratio))
-        self.output_proj = nn.Linear(int(d_model * ratio), d_model)
+        self.sampling_offsets = LinearCopy(
+            d_model,
+            n_heads * n_levels * n_points * 2,
+            bias_compute_fn=bias_compute_fn(self.n_heads, self.n_levels, self.n_points),
+            weight_value=0.0,
+        )
+        self.attention_weights = LinearCopy(
+            d_model, n_heads * n_levels * n_points, bias_value=0.0, weight_value=0.0
+        )
+        self.value_proj = LinearCopy(
+            d_model, int(d_model * ratio), bias_value=0.0, uniform_weight=True
+        )
+        self.output_proj = LinearCopy(
+            int(d_model * ratio), d_model, bias_value=0.0, uniform_weight=True
+        )
 
-        self._reset_parameters()
+        # self.reset_parameters()
         # load custom ops - FIXME: implement/load custome ops
         # ops_dir = os.path.dirname(os.path.abspath(__file__))
         # lib_name = f"MultiScaleDeformableAttention.cpython-{sys.version_info.major}{sys.version_info.minor}-{os.uname().machine}-linux-gnu.so"
         # load_ops(ops_dir, lib_name)
-
-    def _reset_parameters(self):
-        """Reset parameters."""
-        constant_(self.sampling_offsets.weight.data, 0.0)
-        thetas = torch.arange(self.n_heads, dtype=torch.float32) * (
-            2.0 * math.pi / self.n_heads
-        )
-        grid_init = torch.stack([thetas.cos(), thetas.sin()], -1)
-        grid_init = (
-            (grid_init / grid_init.abs().max(-1, keepdim=True)[0])
-            .view(self.n_heads, 1, 1, 2)
-            .repeat(1, self.n_levels, self.n_points, 1)
-        )
-        for i in range(self.n_points):
-            grid_init[:, :, i, :] *= i + 1
-        with torch.no_grad():
-            self.sampling_offsets.bias = nn.Parameter(grid_init.view(-1))
-        constant_(self.attention_weights.weight.data, 0.0)
-        constant_(self.attention_weights.bias.data, 0.0)
-        xavier_uniform_(self.value_proj.weight.data)
-        constant_(self.value_proj.bias.data, 0.0)
-        xavier_uniform_(self.output_proj.weight.data)
-        constant_(self.output_proj.bias.data, 0.0)
 
     def forward(
         self,

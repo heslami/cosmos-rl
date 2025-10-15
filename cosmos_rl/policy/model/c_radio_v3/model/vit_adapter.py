@@ -3,13 +3,11 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.init import normal_
 
 from timm.layers import trunc_normal_
 
 from .radio import RADIOBase
 from .adapter_modules import SpatialPriorModule, InteractionBlock, deform_inputs
-from .ms_deformable_attn import MSDeformAttn
 
 
 class CRADIOAdapter(RADIOBase):
@@ -67,7 +65,7 @@ class CRADIOAdapter(RADIOBase):
         self.embed_dim = self.model.embed_dim
         self.depth = self.model_cfg.get("depth", 12)
 
-        self.level_embed = nn.Parameter(torch.zeros(3, self.embed_dim))
+        self.level_embed = nn.Parameter(torch.empty(3, self.embed_dim))
         self.spm = SpatialPriorModule(
             in_channel=3,
             patch_size=self.model.patch_generator.patch_size,
@@ -97,7 +95,7 @@ class CRADIOAdapter(RADIOBase):
         )
         if 0 in out_indices:
             self.up = nn.ConvTranspose2d(self.embed_dim, self.embed_dim, 2, 2)
-            self.up.apply(self._init_weights)
+            # self.up.apply(self._init_weights)
         else:
             self.up = None
 
@@ -108,10 +106,10 @@ class CRADIOAdapter(RADIOBase):
             layer_name = f"out_norm{i_layer}"
             self.add_module(layer_name, layer)
 
-        self.spm.apply(self._init_weights)
-        self.interactions.apply(self._init_weights)
-        self.apply(self._init_deform_weights)
-        normal_(self.level_embed)
+        # self.spm.apply(self._init_weights)
+        # self.interactions.apply(self._init_weights)
+        # self.apply(self._init_deform_weights)
+        # nn.init.normal_(self.level_embed)
 
         if self.add_summary:
             self.fc_summary = nn.Linear(
@@ -119,14 +117,28 @@ class CRADIOAdapter(RADIOBase):
             )
             if len(self.out_indices) == 4:
                 self.conv1 = nn.Conv2d(2 * self.embed_dim, self.embed_dim, 1)
-                self.conv1.apply(self._init_weights)
+                # self.conv1.apply(self._init_weights)
             else:
                 self.conv1 = None
             self.conv2 = nn.Conv2d(2 * self.embed_dim, self.embed_dim, 1)
-            self.conv2.apply(self._init_weights)
+            # self.conv2.apply(self._init_weights)
             self.conv3 = nn.Conv2d(2 * self.embed_dim, self.embed_dim, 1)
-            self.conv3.apply(self._init_weights)
+            # self.conv3.apply(self._init_weights)
             self.conv4 = nn.Conv2d(2 * self.embed_dim, self.embed_dim, 1)
+            # self.conv4.apply(self._init_weights)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.normal_(self.level_embed)
+        if self.up is not None:
+            self.up.apply(self._init_weights)
+        self.spm.apply(self._init_weights)
+        self.interactions.apply(self._init_weights)
+        if self.add_summary:
+            if self.conv1 is not None:
+                self.conv1.apply(self._init_weights)
+            self.conv2.apply(self._init_weights)
+            self.conv3.apply(self._init_weights)
             self.conv4.apply(self._init_weights)
 
     def _init_weights(self, m):
@@ -140,13 +152,15 @@ class CRADIOAdapter(RADIOBase):
         elif isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)):
             fan_out = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
             fan_out //= m.groups
-            m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
+            nn.init.normal_(m.weight, mean=0, std=math.sqrt(2.0 / fan_out))
+            # m.weight.data.normal_(0, math.sqrt(2.0 / fan_out))
             if m.bias is not None:
-                m.bias.data.zero_()
+                nn.init.constant_(m.bias, 0)
+                # m.bias.data.zero_()
 
-    def _init_deform_weights(self, m):
-        if isinstance(m, MSDeformAttn):
-            m._reset_parameters()
+    # def _init_deform_weights(self, m):
+    #     if isinstance(m, MSDeformAttn):
+    #         m.reset_parameters()
 
     def _add_level_embed(self, c2, c3, c4):
         c2 = c2 + self.level_embed[0]

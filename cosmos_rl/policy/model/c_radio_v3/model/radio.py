@@ -3,6 +3,7 @@
 import math
 import types
 from typing import Any, Dict, List, Optional, Tuple, Union
+import functools
 
 import torch
 import torch.nn as nn
@@ -149,13 +150,17 @@ class ClsToken(nn.Module):
                     num_tokens % register_multiple
                 )
 
-            scale = ndim**-0.5
             self.token = nn.Parameter(
-                torch.randn(num_tokens + self.num_registers, ndim) * scale
+                torch.empty(num_tokens + self.num_registers, ndim)
             )
         else:
             self.token = None
         self.num_patches = self.num_tokens + self.num_registers
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        if self.token is not None:
+            nn.init.normal_(self.token, mean=0.0, std=self.ndim**-0.5)
 
     def no_weight_decay(self):
         """No weight decay."""
@@ -239,10 +244,8 @@ class ViTPatchGenerator(nn.Module):
             patch_size, embed_dim, device=device, dtype=dtype
         )
         if abs_pos:
-            scale = embed_dim**-0.5
             self.pos_embed = nn.Parameter(
-                torch.randn(1, self.num_patches, embed_dim, device=device, dtype=dtype)
-                * scale
+                torch.empty(1, self.num_patches, embed_dim, device=device, dtype=dtype)
             )
         self.cls_token = ClsToken(
             embed_dim,
@@ -253,6 +256,10 @@ class ViTPatchGenerator(nn.Module):
         self.patch_normalizer = (
             nn.LayerNorm(embed_dim) if normalize_patches else nn.Identity()
         )
+
+    def reset_parameters(self):
+        if self.abs_pos:
+            nn.init.normal_(self.pos_embed, mean=0.0, std=self.embed_dim**-0.5)
 
     def forward(self, x: torch.Tensor):
         """Forward function to return the patch embeddings with position embedding applied."""
@@ -505,6 +512,10 @@ class RADIOBase(nn.Module):
         else:
             img_size = 224
 
+        # FIXME -- this hack is to make sure the model can be constructed on meta device
+        orig_linspace = torch.linspace
+        torch.linspace = functools.partial(orig_linspace, device="cpu")
+
         vit_backbone = VisionTransformer(
             img_size=img_size,
             in_chans=self.in_chans,
@@ -515,6 +526,9 @@ class RADIOBase(nn.Module):
             weight_init="skip",
             **self.model_cfg,
         )
+
+        torch.linspace = orig_linspace
+
         # CRADIOV1 adds `nn.LayerNorm` to `Mlp` layers.
         # if self.backbone == "vit_huge_patch16_224_mlpnorm":
         #     for m in vit_backbone.modules():

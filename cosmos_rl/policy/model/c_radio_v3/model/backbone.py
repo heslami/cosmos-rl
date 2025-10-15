@@ -1,6 +1,4 @@
-from typing import List
-from typing import Optional
-from typing import Dict
+from typing import List, Dict
 
 import numpy as np
 
@@ -9,11 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models._utils import IntermediateLayerGetter
 
-from cosmos_rl.utils.logging import logger
-
-from .model_utils import load_pretrained_weights
 from .vit_adapter import vit_base_cradiov3
-from ..utils import get_global_rank
 
 
 class BackboneBase(nn.Module):
@@ -27,7 +21,7 @@ class BackboneBase(nn.Module):
         num_channels: int,
         return_interm_indices: list,
         export: bool,
-        missing_keys: list,
+        # missing_keys: list,
     ):
         """Initialize the Backbone Base Class.
 
@@ -72,11 +66,12 @@ class BackboneBase(nn.Module):
             self.body = backbone
         elif model_name.startswith(("vit")):
             # These params are still part of backbone but trainable
-            if not missing_keys:
-                missing_keys = []
-            for name, parameter in backbone.named_parameters():
-                if not any(p in name for p in missing_keys) and not train_backbone:
-                    parameter.requires_grad_(False)
+            # NOTE: logic moved to load_hf_weights
+            # if not missing_keys:
+            #     missing_keys = []
+            # for name, parameter in backbone.named_parameters():
+            #     if not any(p in name for p in missing_keys) and not train_backbone:
+            #         parameter.requires_grad_(False)
             self.body = backbone
 
         self.num_channels = num_channels
@@ -129,7 +124,7 @@ class Backbone(BackboneBase):
     def __init__(
         self,
         name: str,
-        pretrained_backbone_path: Optional[str],
+        # pretrained_backbone_path: Optional[str],
         train_backbone: bool,
         resolution: int,
         return_interm_indices: list,
@@ -172,12 +167,12 @@ class Backbone(BackboneBase):
         #     ["resnet_34", "resnet_50"] + \
         #     ['efficientvit_b0', 'efficientvit_b1', 'efficientvit_b2', 'efficientvit_b3']
 
-        # FIXME - move to load_hf_weight function and WeighMapper
-        pretrained_backbone_ckp = (
-            load_pretrained_weights(pretrained_backbone_path)
-            if pretrained_backbone_path
-            else None
-        )
+        # NOTE: moved to load_hf_weight function and WeighMapper
+        # pretrained_backbone_ckp = (
+        #     load_pretrained_weights(pretrained_backbone_path)
+        #     if pretrained_backbone_path
+        #     else None
+        # )
 
         # if name == 'resnet_34':
         #     if export:
@@ -254,12 +249,12 @@ class Backbone(BackboneBase):
         # else:
         #     raise NotImplementedError(f"Backbone {name} is not implemented. Supported architectures {supported_arch}")
 
-        # FIXME - make this code to depend on CosmosConfig
-        if pretrained_backbone_ckp:
-            pretrained_backbone_ckp = {
-                k.replace("base_model.", "model."): v
-                for k, v in pretrained_backbone_ckp.items()
-            }
+        # NOTE: moved to load_hf_weights
+        # if pretrained_backbone_ckp:
+        #     pretrained_backbone_ckp = {
+        #         k.replace("base_model.", "model."): v
+        #         for k, v in pretrained_backbone_ckp.items()
+        #     }
         backbone = vit_base_cradiov3(
             out_indices=return_interm_indices,
             resolution=resolution,
@@ -267,17 +262,18 @@ class Backbone(BackboneBase):
         )
         num_channels = np.array([backbone.embed_dim] * len(return_interm_indices))
 
-        missing_keys = None
-        if pretrained_backbone_ckp:
-            _tmp_st_output = backbone.load_state_dict(
-                pretrained_backbone_ckp, strict=False
-            )
-            missing_keys = list(_tmp_st_output[0])
-            if get_global_rank() == 0:
-                logger.info(
-                    f"Loaded pretrained weights from {pretrained_backbone_path}"
-                )
-                logger.info(f"{_tmp_st_output}")
+        # NOTE: moved to load_hf_weights
+        # missing_keys = None
+        # if pretrained_backbone_ckp:
+        #     _tmp_st_output = backbone.load_state_dict(
+        #         pretrained_backbone_ckp, strict=False
+        #     )
+        #     missing_keys = list(_tmp_st_output[0])
+        #     if get_global_rank() == 0:
+        #         logger.info(
+        #             f"Loaded pretrained weights from {pretrained_backbone_path}"
+        #         )
+        #         logger.info(f"{_tmp_st_output}")
 
         super().__init__(
             name,
@@ -286,7 +282,7 @@ class Backbone(BackboneBase):
             num_channels,
             return_interm_indices,
             export,
-            missing_keys,
+            # missing_keys,
         )
 
 
