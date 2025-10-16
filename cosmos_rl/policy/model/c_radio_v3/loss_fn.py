@@ -2,6 +2,7 @@ import copy
 
 import torch.nn as nn
 
+
 from .loss.matcher import HungarianMatcher
 from .loss.criterion import SetCriterion
 
@@ -79,5 +80,10 @@ class DINOLoss(nn.Module):
             for k in loss_dict.keys()
             if k in self.weight_dict
         )
+
+        # logger.info(f"train_class_error = {loss_dict['class_error']}")
+        # logger.info(f"train_loss_ce = {loss_dict['loss_ce']}")
+        # logger.info(f"train_loss_bbox = {loss_dict['loss_bbox']}")
+        # logger.info(f"train_loss_giou = {loss_dict['loss_giou']}")
 
         return losses

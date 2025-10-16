@@ -376,3 +376,145 @@ safetensor names:
       └─ .summary_idxs (END)
 
 
+
+trainable_param in backbone model
+<root>
+└─ backbone
+   └─ .0
+      └─ .body
+         ├─ .level_embed (END)
+         ├─ .spm
+         │  ├─ .stem
+         │  │  ├─ .0.weight (END)
+         │  │  ├─ .1
+         │  │  │  ├─ .weight (END)
+         │  │  │  └─ .bias (END)
+         │  │  ├─ .3.weight (END)
+         │  │  ├─ .4
+         │  │  │  ├─ .weight (END)
+         │  │  │  └─ .bias (END)
+         │  │  ├─ .6.weight (END)
+         │  │  └─ .7
+         │  │     ├─ .weight (END)
+         │  │     └─ .bias (END)
+         │  ├─ .conv2
+         │  │  ├─ .0.weight (END)
+         │  │  └─ .1
+         │  │     ├─ .weight (END)
+         │  │     └─ .bias (END)
+         │  ├─ .conv3
+         │  │  ├─ .0.weight (END)
+         │  │  └─ .1
+         │  │     ├─ .weight (END)
+         │  │     └─ .bias (END)
+         │  ├─ .conv4
+         │  │  ├─ .0.weight (END)
+         │  │  └─ .1
+         │  │     ├─ .weight (END)
+         │  │     └─ .bias (END)
+         │  ├─ .fc1
+         │  │  ├─ .weight (END)
+         │  │  └─ .bias (END)
+         │  ├─ .fc2
+         │  │  ├─ .weight (END)
+         │  │  └─ .bias (END)
+         │  ├─ .fc3
+         │  │  ├─ .weight (END)
+         │  │  └─ .bias (END)
+         │  └─ .fc4
+         │     ├─ .weight (END)
+         │     └─ .bias (END)
+         ├─ .interactions
+         │  ├─ .0
+         │  │  ├─ .injector
+         │  │  │  ├─ .query_norm
+         │  │  │  │  ├─ .weight (END)
+         │  │  │  │  └─ .bias (END)
+         │  │  │  ├─ .feat_norm
+         │  │  │  │  ├─ .weight (END)
+         │  │  │  │  └─ .bias (END)
+         │  │  │  ├─ .attn
+         │  │  │  │  ├─ .sampling_offsets
+         │  │  │  │  │  ├─ .weight (END)
+         │  │  │  │  │  └─ .bias (END)
+         │  │  │  │  ├─ .attention_weights
+         │  │  │  │  │  ├─ .weight (END)
+         │  │  │  │  │  └─ .bias (END)
+         │  │  │  │  ├─ .value_proj
+         │  │  │  │  │  ├─ .weight (END)
+         │  │  │  │  │  └─ .bias (END)
+         │  │  │  │  └─ .output_proj
+         │  │  │  │     ├─ .weight (END)
+         │  │  │  │     └─ .bias (END)
+         │  │  │  └─ .ls.gamma (END)
+         │  │  └─ .extractor
+         │  │     ├─ .query_norm
+         │  │     │  ├─ .weight (END)
+         │  │     │  └─ .bias (END)
+         │  │     ├─ .feat_norm
+         │  │     │  ├─ .weight (END)
+         │  │     │  └─ .bias (END)
+         │  │     ├─ .attn
+         │  │     │  ├─ .sampling_offsets ... .output_proj.bias (8 entries omitted)
+         │  │     │  ... (Structured identically to .injector.attn)
+         │  │     ├─ .ffn
+         │  │     │  ├─ .fc1
+         │  │     │  │  ├─ .weight (END)
+         │  │     │  │  └─ .bias (END)
+         │  │     │  ├─ .dwconv.dwconv
+         │  │     │  │  ├─ .weight (END)
+         │  │     │  │  └─ .bias (END)
+         │  │     │  └─ .fc2
+         │  │     │     ├─ .weight (END)
+         │  │     │     └─ .bias (END)
+         │  │     └─ .ffn_norm
+         │  │        ├─ .weight (END)
+         │  │        └─ .bias (END)
+         │  ├─ .1 ... .2 (Structured identically to .0)
+         │  │  (34 entries for each, total 2 blocks omitted for brevity)
+         │  └─ .3
+         │     ├─ .injector (14 entries omitted, structured identically to .0.injector)
+         │     ├─ .extractor (20 entries omitted, structured identically to .0.extractor)
+         │     └─ .extra_extractors
+         │        ├─ .0 (Structured identically to .extractor's contents)
+         │        │  ├─ .query_norm ... .attn.output_proj.bias (12 entries omitted)
+         │        │  ├─ .ffn
+         │        │  │  ├─ .fc1 ... .dwconv.dwconv.bias (4 entries omitted)
+         │        │  │  └─ .fc2
+         │        │  │     ├─ .weight (END)
+         │        │  │     └─ .bias (END)
+         │        │  └─ .ffn_norm
+         │        │     ├─ .weight (END)
+         │        │     └─ .bias (END)
+         │        └─ .1 (Structured identically to .0)
+         │           (18 entries omitted for brevity)
+         ├─ .up
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         ├─ .out_norm0
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         ├─ .out_norm1
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         ├─ .out_norm2
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         ├─ .out_norm3
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         ├─ .fc_summary
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         ├─ .conv1
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         ├─ .conv2
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         ├─ .conv3
+         │  ├─ .weight (END)
+         │  └─ .bias (END)
+         └─ .conv4
+            ├─ .weight (END)
+            └─ .bias (END)
