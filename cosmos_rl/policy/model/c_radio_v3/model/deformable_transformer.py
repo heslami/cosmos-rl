@@ -18,7 +18,7 @@ from .model_utils import (
     gen_sineembed_for_position,
     inverse_sigmoid,
 )
-from .ms_deformable_attn import MSDeformAttn
+from .ops.ms_deformable_attn import MSDeformAttn
 
 
 class DeformableTransformer(nn.Module):
@@ -211,7 +211,6 @@ class DeformableTransformer(nn.Module):
 
         if num_feature_levels > 1:
             if self.num_encoder_layers > 0:
-                # FIXME -- look into why torch.Tensor was used
                 self.level_embed = nn.Parameter(
                     torch.empty(num_feature_levels, d_model)
                 )
@@ -240,7 +239,6 @@ class DeformableTransformer(nn.Module):
             self.enc_output_norm = nn.LayerNorm(d_model)
 
             if two_stage_pat_embed > 0:
-                # FIXME -- look into why torch.Tensor was used
                 self.pat_embed_for_2stage = nn.Parameter(
                     torch.empty(two_stage_pat_embed, d_model)
                 )
@@ -296,7 +294,7 @@ class DeformableTransformer(nn.Module):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
-        # FIXME - make sure model.apply(...) calls the reset_parameters of submodules
+        # Note - we recursively call reset_parameters once model moves to the device
         # for m in self.modules():
         #     if isinstance(m, MSDeformAttn):
         #         m._reset_parameters()

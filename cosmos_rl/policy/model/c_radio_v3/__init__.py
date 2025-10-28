@@ -111,14 +111,13 @@ class CRadioV3Model(BaseModel):
 
         # Index 4 is not part of the backbone but taken from index 3 with conv 3x3 stride 2
         return_interm_indices = [r for r in args.return_interm_indices if r != 4]
+
         name = {
             "B": "vit_base_cradiov3",
             "L": "vit_large_cradiov3",
             "H": "vit_huge_cradiov3",
             "g": "vit_giant_cradiov3",
         }[model_type]
-        # assert not args.train_backbone
-        # with torch.no_grad():
         backbone_only = Backbone(
             name,  # backbone,
             # "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar",  # pretrained_backbone_path,

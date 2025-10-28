@@ -1,6 +1,8 @@
 """MSDeformAttn modules."""
 
 import math
+import os
+import sys
 
 import torch
 import torch.nn as nn
@@ -8,7 +10,8 @@ import torch.nn.functional as F
 
 from cosmos_rl.utils.logging import logger
 
-from .model_utils import LinearCopy
+from ..model_utils import LinearCopy
+from .functions import load_ops, MSDeformAttnFunction
 
 
 def _is_power_of_2(n):
@@ -93,10 +96,10 @@ class MSDeformAttn(nn.Module):
         )
 
         # self.reset_parameters()
-        # load custom ops - FIXME: implement/load custome ops
-        # ops_dir = os.path.dirname(os.path.abspath(__file__))
-        # lib_name = f"MultiScaleDeformableAttention.cpython-{sys.version_info.major}{sys.version_info.minor}-{os.uname().machine}-linux-gnu.so"
-        # load_ops(ops_dir, lib_name)
+        # load custom ops
+        ops_dir = os.path.dirname(os.path.abspath(__file__))
+        lib_name = f"MultiScaleDeformableAttention.cpython-{sys.version_info.major}{sys.version_info.minor}-{os.uname().machine}-linux-gnu.so"
+        load_ops(ops_dir, lib_name)
 
     def forward(
         self,
@@ -187,26 +190,32 @@ class MSDeformAttn(nn.Module):
             #         value, input_spatial_shapes, sampling_locations, attention_weights
             #     )
         else:
-            # if torch.cuda.is_available() and value.is_cuda:
-            #     # For mixed precision training
-            #     half_float = False
-            #     if value.dtype in [torch.float16, torch.bfloat16]:
-            #         half_float = value.dtype
-            #         value = value.float()
-            #         sampling_locations = sampling_locations.float()
-            #         attention_weights = attention_weights.float()
+            if torch.cuda.is_available() and value.is_cuda:
+                # For mixed precision training
+                half_float = False
+                if value.dtype in [torch.float16, torch.bfloat16]:
+                    half_float = value.dtype
+                    value = value.float()
+                    sampling_locations = sampling_locations.float()
+                    attention_weights = attention_weights.float()
 
-            #     output = MSDeformAttnFunction.apply(
-            #         value, input_spatial_shapes,
-            #         input_level_start_index, sampling_locations,
-            #         attention_weights, self.im2col_step)
+                output = MSDeformAttnFunction.apply(
+                    value,
+                    input_spatial_shapes,
+                    input_level_start_index,
+                    sampling_locations,
+                    attention_weights,
+                    self.im2col_step,
+                )
 
-            #     if half_float:
-            #         output = output.to(half_float)
+                if half_float:
+                    output = output.to(half_float)
 
-            # else:
-            #     # CPU implementation of multi-scale deformable attention
-            #     output = multi_scale_deformable_attn_pytorch(value, input_spatial_shapes, sampling_locations, attention_weights)
+            else:
+                # CPU implementation of multi-scale deformable attention
+                output = multi_scale_deformable_attn_pytorch(
+                    value, input_spatial_shapes, sampling_locations, attention_weights
+                )
             # FIXME - fallback to CPU for now, implement triton/cuda based op later
             # output = torch.utils.checkpoint.checkpoint(
             #     compiled_multi_scale_deformable_attn_pytorch,
@@ -220,9 +229,9 @@ class MSDeformAttn(nn.Module):
             #     output = multi_scale_deformable_attn_pytorch(
             #         value, input_spatial_shapes, sampling_locations, attention_weights
             #     )
-            output = multi_scale_deformable_attn_pytorch(
-                value, input_spatial_shapes, sampling_locations, attention_weights
-            )
+            # output = multi_scale_deformable_attn_pytorch(
+            #     value, input_spatial_shapes, sampling_locations, attention_weights
+            # )
 
         output = output.view(N, Len_q, int(self.d_model * self.ratio))
         output = self.output_proj(output)
@@ -296,6 +305,6 @@ def multi_scale_deformable_attn_pytorch(
     )
 
 
-compiled_multi_scale_deformable_attn_pytorch = torch.compile(
-    multi_scale_deformable_attn_pytorch
-)
+# compiled_multi_scale_deformable_attn_pytorch = torch.compile(
+#     multi_scale_deformable_attn_pytorch
+# )

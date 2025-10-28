@@ -10,7 +10,7 @@ import torch.utils.checkpoint as checkpoint
 
 from timm.layers import DropPath
 
-from .ms_deformable_attn import MSDeformAttn
+from .ops.ms_deformable_attn import MSDeformAttn
 
 
 class AdaptivePadding(nn.Module):
