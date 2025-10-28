@@ -497,6 +497,11 @@ class SFTTrainer(Trainer):
         else:
             self._save_freq = self.config.train.ckpt.save_freq
 
+        # import pdb; pdb.set_trace()
+        # tao_weights = torch.load("../tao-pytorch/init_weights_tao.pth")
+        # self.model.model.load_state_dict(tao_weights, strict=True)
+        # torch.save(self.model.model.state_dict(), "init_weights_cosmos.pth")
+
     def validate(self):
         if not self.config.validation.enable:
             return
@@ -694,6 +699,11 @@ class SFTTrainer(Trainer):
                         # batch[k] = (
                         #     v.to(self.device) if isinstance(v, torch.Tensor) else v
                         # )
+                    # import pdb; pdb.set_trace()
+                    # dump = torch.load("../tao-pytorch/debug_dump/input.pt", map_location="cuda")
+                    # batch["input_ids"] = dump["data"]
+                    # batch["targets"] = dump["targets"]
+                    # batch["label_ids"] = dump["targets"]
 
                     labels = batch.pop("label_ids")
 
@@ -807,10 +817,15 @@ class SFTTrainer(Trainer):
                         #         )
                         # return
                         #########################################################################################
-                        with self.act_offloading_ctx_manager:
-                            logits = self.model(**batch)
 
-                        loss = self.loss_fn(logits, labels)
+                        with torch.autocast(
+                            device_type="cuda",
+                            dtype=util.str2torch_dtype(self.config.train.param_dtype),
+                        ):
+                            with self.act_offloading_ctx_manager:
+                                logits = self.model(**batch)
+
+                            loss = self.loss_fn(logits, labels)
                         # loss = self.loss_fn(
                         #     logits,
                         #     labels,
@@ -823,6 +838,9 @@ class SFTTrainer(Trainer):
                         #     print(f"set_is_last_backward: {i == mini_batch_begin_idxs[-1]}")
                         #     self.model.set_is_last_backward(i == mini_batch_begin_idxs[-1])
                         loss.backward()
+                        # out_tao = torch.load("../tao-pytorch/debug_dump/output.pt", map_location="cuda")
+                        # grad_tao = torch.load("../tao-pytorch/debug_dump/gradients.pt", map_location="cuda")
+
                     acc_loss += loss.detach()
 
                 """

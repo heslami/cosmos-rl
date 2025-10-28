@@ -208,6 +208,18 @@ class MSDeformAttn(nn.Module):
             #     # CPU implementation of multi-scale deformable attention
             #     output = multi_scale_deformable_attn_pytorch(value, input_spatial_shapes, sampling_locations, attention_weights)
             # FIXME - fallback to CPU for now, implement triton/cuda based op later
+            # output = torch.utils.checkpoint.checkpoint(
+            #     compiled_multi_scale_deformable_attn_pytorch,
+            #     value, input_spatial_shapes, sampling_locations, attention_weights
+            # )
+            # output = torch.utils.checkpoint.checkpoint(
+            #     multi_scale_deformable_attn_pytorch,
+            #     value, input_spatial_shapes, sampling_locations, attention_weights
+            # )
+            # with OffloadActivations(max_fwd_stash_size=1):
+            #     output = multi_scale_deformable_attn_pytorch(
+            #         value, input_spatial_shapes, sampling_locations, attention_weights
+            #     )
             output = multi_scale_deformable_attn_pytorch(
                 value, input_spatial_shapes, sampling_locations, attention_weights
             )
@@ -234,6 +246,7 @@ def multi_scale_deformable_attn_pytorch(
     bs, _, n_head, c = value.shape
     _, Len_q, _, n_levels, n_points, _ = sampling_locations.shape
 
+    # value = value.contiguous()
     split_shape = [h * w for h, w in value_spatial_shapes]
     value_list = value.split(split_shape, dim=1)
     sampling_grids = 2 * sampling_locations - 1
@@ -242,28 +255,47 @@ def multi_scale_deformable_attn_pytorch(
         # N_, H_*W_, M_, D_ -> N_, H_*W_, M_*D_ -> N_, M_*D_, H_*W_ -> N_*M_, D_, H_, W_
         value_l_ = (
             value_list[level].flatten(2).permute(0, 2, 1).reshape(bs * n_head, c, h, w)
+            # .contiguous(memory_format=torch.channels_last)
         )
         # N_, Lq_, M_, P_, 2 -> N_, M_, Lq_, P_, 2 -> N_*M_, Lq_, P_, 2
         sampling_grid_l_ = (
             sampling_grids[:, :, :, level].permute(0, 2, 1, 3, 4).flatten(0, 1)
+            # .contiguous()
         )
         # N_*M_, D_, Lq_, P_
-        sampling_value_l_ = F.grid_sample(
-            value_l_,
-            sampling_grid_l_,
-            mode="bilinear",
-            padding_mode="zeros",
-            align_corners=False,
+        sampling_value_l_ = (
+            F.grid_sample(
+                value_l_,
+                sampling_grid_l_,
+                mode="bilinear",
+                padding_mode="zeros",
+                align_corners=False,
+            )
+            # .contiguous()
         )
         sampling_value_list.append(sampling_value_l_)
     # (N_, Lq_, M_, L_, P_) -> (N_, M_, Lq_, L_, P_) -> (N_*M_, 1, Lq_, L_*P_)
-    attention_weights = attention_weights.permute(0, 2, 1, 3, 4).reshape(
-        bs * n_head, 1, Len_q, n_levels * n_points
+    attention_weights = (
+        attention_weights.permute(0, 2, 1, 3, 4).reshape(
+            bs * n_head, 1, Len_q, n_levels * n_points
+        )
+        # .contiguous()
     )
     output = (
         (torch.stack(sampling_value_list, dim=-2).flatten(-2) * attention_weights)
+        # (torch.cat(sampling_value_list, dim=-1) * attention_weights)
         .sum(-1)
         .reshape(bs, n_head * c, Len_q)
+        # .contiguous()
+    )
+    # import pdb; pdb.set_trace()
+
+    return (
+        output.permute(0, 2, 1)
+        # .contiguous()
     )
 
-    return output.permute(0, 2, 1)
+
+compiled_multi_scale_deformable_attn_pytorch = torch.compile(
+    multi_scale_deformable_attn_pytorch
+)

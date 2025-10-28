@@ -45,7 +45,7 @@ class CRadioV3Args:
     dilation: bool = False
     dropout_ratio: float = 0.3
     export: bool = False
-    # activation_checkpoint=True, --> same as config.policy.model_gradient_checkpointing
+    activation_checkpoint: bool = False
     return_interm_indices: List[int] = field(default_factory=lambda: [1, 2, 3, 4])
     pre_norm: bool = False
     num_patterns: int = 0
@@ -84,7 +84,7 @@ class CRadioV3Model(BaseModel):
     def supported_model_types():
         return ["cradio"]
 
-    def __init__(self, args: CRadioV3Args):
+    def __init__(self, args: CRadioV3Args, model_type: str):
         super().__init__(args.hf_config)
         # build positional encoding. only support PositionEmbeddingSine
         if args.export:
@@ -111,15 +111,23 @@ class CRadioV3Model(BaseModel):
 
         # Index 4 is not part of the backbone but taken from index 3 with conv 3x3 stride 2
         return_interm_indices = [r for r in args.return_interm_indices if r != 4]
+        name = {
+            "B": "vit_base_cradiov3",
+            "L": "vit_large_cradiov3",
+            "H": "vit_huge_cradiov3",
+            "g": "vit_giant_cradiov3",
+        }[model_type]
+        # assert not args.train_backbone
+        # with torch.no_grad():
         backbone_only = Backbone(
-            "vit_base_cradiov3",  # backbone,
+            name,  # backbone,
             # "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-B/c-radio_v3-b_half.pth.tar",  # pretrained_backbone_path,
             args.train_backbone,
             args.lsj_resolution,
             return_interm_indices,
             args.dilation,
             args.export,
-            # activation_checkpoint,
+            args.activation_checkpoint,
         )
 
         # Keep joiner for backward compatibility
@@ -141,7 +149,7 @@ class CRadioV3Model(BaseModel):
             d_model=args.hidden_dim,
             nhead=args.nheads,
             export=args.export,
-            # activation_checkpoint=activation_checkpoint,
+            activation_checkpoint=args.activation_checkpoint,
             num_encoder_layers=args.enc_layers,
             num_decoder_layers=args.dec_layers,
             dim_feedforward=args.dim_feedforward,
@@ -232,7 +240,7 @@ class CRadioV3Model(BaseModel):
                 dilation=False,  # default
                 dropout_ratio=0.0,
                 export=False,
-                # activation_checkpoint=activation_checkpoint,
+                activation_checkpoint=True,
                 return_interm_indices=[0, 1, 2, 3, 4],
                 decoder_sa_type="sa",  # default
                 embed_init_tgt=True,  # default
@@ -246,7 +254,8 @@ class CRadioV3Model(BaseModel):
                 pre_norm=False,  # default
                 two_stage_type="standard",  # default
                 fix_refpoints_hw=-1,  # default
-            )
+            ),
+            model_name_or_path[-1],
         )
 
     def forward(
@@ -266,7 +275,7 @@ class CRadioV3Model(BaseModel):
 
         return parallelize_model, self
 
-    def post_to_empty_hook(self, cosmos_config: CosmosConfig):
+    def post_to_empty_hook(self, config: CosmosConfig):
         nn.MultiheadAttention.reset_parameters = nn.MultiheadAttention._reset_parameters
         self.model.apply(
             lambda m: m.reset_parameters() if hasattr(m, "reset_parameters") else None

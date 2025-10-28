@@ -30,7 +30,7 @@ class DeformableTransformer(nn.Module):
         nhead=8,
         num_queries=300,
         export=False,
-        #  activation_checkpoint=True,
+        activation_checkpoint=True,
         num_encoder_layers=6,
         num_decoder_layers=6,
         dim_feedforward=2048,
@@ -155,7 +155,7 @@ class DeformableTransformer(nn.Module):
             enc_layer_share=enc_layer_share,
             two_stage_type=two_stage_type,
             export=export,
-            # activation_checkpoint=activation_checkpoint
+            activation_checkpoint=activation_checkpoint,
         )
 
         # choose decoder layer type
@@ -182,7 +182,7 @@ class DeformableTransformer(nn.Module):
             num_decoder_layers,
             decoder_norm,
             export=export,
-            #   activation_checkpoint=activation_checkpoint,
+            activation_checkpoint=activation_checkpoint,
             return_intermediate=return_intermediate_dec,
             d_model=d_model,
             query_dim=4,
@@ -572,7 +572,7 @@ class TransformerEncoder(nn.Module):
         enc_layer_dropout_prob=None,
         two_stage_type="no",  # ['no', 'standard']
         export=False,
-        #  activation_checkpoint=True,
+        activation_checkpoint=True,
     ):
         """Initializes the Transformer Encoder Module"""
         super().__init__()
@@ -584,7 +584,8 @@ class TransformerEncoder(nn.Module):
         else:
             self.layers = []
             del encoder_layer
-        # self.activation_checkpoint = activation_checkpoint
+        self.activation_checkpoint = activation_checkpoint
+        # self.activation_checkpoint = False
         self.export = export
         self.query_scale = None
         self.num_queries = num_queries
@@ -678,7 +679,7 @@ class TransformerEncoder(nn.Module):
                     dropflag = True
 
             if not dropflag:
-                if self.export:  # or not self.activation_checkpoint:
+                if self.export or not self.activation_checkpoint:
                     output = layer(
                         src=output,
                         pos=pos,
@@ -730,7 +731,7 @@ class TransformerDecoder(nn.Module):
         num_layers,
         norm=None,
         export=False,
-        #  activation_checkpoint=True,
+        activation_checkpoint=True,
         return_intermediate=False,
         d_model=256,
         query_dim=4,
@@ -746,7 +747,8 @@ class TransformerDecoder(nn.Module):
         """Initializes the Transformer Decoder Module"""
         super().__init__()
         self.export = export
-        # self.activation_checkpoint = activation_checkpoint
+        self.activation_checkpoint = activation_checkpoint
+        # self.activation_checkpoint = False
         if num_layers > 0:
             self.layers = _get_clones(
                 decoder_layer, num_layers, layer_share=dec_layer_share
@@ -889,7 +891,7 @@ class TransformerDecoder(nn.Module):
                 if prob < self.dec_layer_dropout_prob[layer_id]:
                     dropflag = True
             if not dropflag:
-                if self.export:  # or not self.activation_checkpoint:
+                if self.export or not self.activation_checkpoint:
                     output = layer(
                         tgt=output,
                         tgt_query_pos=query_pos,

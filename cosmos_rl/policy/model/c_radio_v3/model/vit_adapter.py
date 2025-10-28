@@ -27,7 +27,7 @@ class CRADIOAdapter(RADIOBase):
         add_vit_feature=True,
         use_extra_extractor=True,
         out_indices=[0, 1, 2, 3],
-        #  activation_checkpoint=False,
+        activation_checkpoint=False,
         drop_path_rate=0.4,
         add_summary=True,
         **kwargs,
@@ -88,7 +88,7 @@ class CRADIOAdapter(RADIOBase):
                     extra_extractor=(
                         (i == len(interaction_indexes) - 1) and use_extra_extractor
                     ),
-                    #  with_cp=activation_checkpoint
+                    with_cp=activation_checkpoint,
                 )
                 for i in range(len(interaction_indexes))
             ]
@@ -173,6 +173,7 @@ class CRADIOAdapter(RADIOBase):
         deform_inputs1, deform_inputs2 = deform_inputs(x)
 
         # SPM forward
+        # c1, c2, c3, c4 = torch.utils.checkpoint.checkpoint(self.spm, x)
         c1, c2, c3, c4 = self.spm(x)
         c2, c3, c4 = self._add_level_embed(c2, c3, c4)
         c = torch.cat([c2, c3, c4], dim=1)
@@ -294,9 +295,134 @@ def vit_base_cradiov3(
         deform_ratio=0.5,
         interaction_indexes=[[0, 3], [4, 7], [8, 11], [12, 15]],
         out_indices=out_indices,
-        # with_cp=activation_checkpoint,
+        activation_checkpoint=activation_checkpoint,
         add_summary=use_summary_token,
         **kwargs,
     )
 
     return model
+
+
+def vit_large_cradiov3(
+    out_indices=[0, 1, 2, 3],
+    activation_checkpoint=False,
+    use_summary_token=True,
+    **kwargs,
+):
+    """ViT-Large C-RADIO-v3 model.
+
+    Args:
+        out_indices (list): List of block indices to return as feature.
+        activation_checkpoint (bool): flag to indicate if activation checkpoint is used.
+        use_summary_token (bool): Whether to use summary_token of backbone.
+
+    Return:
+        model: CRADIOAdapter model.
+    """
+    model = CRADIOAdapter(
+        model_name="vit_large_patch14_reg4_dinov2",
+        patch_size=16,
+        embed_dim=1024,
+        depth=24,
+        num_heads=16,
+        drop_path_rate=0.3,
+        init_values=1e-5,
+        conv_inplane=64,
+        n_points=4,
+        deform_num_heads=16,
+        cffn_ratio=0.25,
+        deform_ratio=0.5,
+        interaction_indexes=[[0, 5], [6, 11], [12, 17], [18, 23]],
+        out_indices=out_indices,
+        activation_checkpoint=activation_checkpoint,
+        add_summary=use_summary_token,
+        **kwargs,
+    )
+
+    return model
+
+
+def vit_huge_cradiov3(
+    out_indices=[0, 1, 2, 3],
+    activation_checkpoint=False,
+    use_summary_token=True,
+    **kwargs,
+):
+    """ViT-Huge C-RADIO-v3 model.
+
+    Args:
+        out_indices (list): List of block indices to return as feature.
+        activation_checkpoint (bool): flag to indicate if activation checkpoint is used.
+        use_summary_token (bool): Whether to use summary_token of backbone.
+
+    Return:
+        model: CRADIOAdapter model.
+    """
+    model = CRADIOAdapter(
+        model_name="vit_huge_patch14_reg4_dinov2",
+        patch_size=16,
+        embed_dim=1280,
+        depth=32,
+        num_heads=16,
+        drop_path_rate=0.3,
+        init_values=1e-5,
+        conv_inplane=64,
+        n_points=4,
+        deform_num_heads=16,
+        cffn_ratio=0.25,
+        deform_ratio=0.5,
+        interaction_indexes=[[0, 7], [8, 15], [16, 23], [24, 31]],
+        out_indices=out_indices,
+        activation_checkpoint=activation_checkpoint,
+        add_summary=use_summary_token,
+        **kwargs,
+    )
+
+    return model
+
+
+def vit_giant_cradiov3(
+    out_indices=[0, 1, 2, 3],
+    activation_checkpoint=False,
+    use_summary_token=True,
+    **kwargs,
+):
+    """ViT-Giant C-RADIO-v3 model.
+
+    Args:
+        out_indices (list): List of block indices to return as feature.
+        activation_checkpoint (bool): flag to indicate if activation checkpoint is used.
+        use_summary_token (bool): Whether to use summary_token of backbone.
+
+    Return:
+        model: CRADIOAdapter model.
+    """
+    model = CRADIOAdapter(
+        model_name="vit_giant_patch14_reg4_dinov2",
+        patch_size=16,
+        embed_dim=1536,
+        depth=40,
+        num_heads=24,
+        drop_path_rate=0.3,
+        init_values=1e-5,
+        conv_inplane=64,
+        n_points=4,
+        deform_num_heads=16,
+        cffn_ratio=0.25,
+        deform_ratio=0.5,
+        interaction_indexes=[[0, 9], [10, 19], [20, 29], [30, 39]],
+        out_indices=out_indices,
+        activation_checkpoint=activation_checkpoint,
+        add_summary=use_summary_token,
+        **kwargs,
+    )
+
+    return model
+
+
+vit_model_dict = {
+    "vit_base_cradiov3": vit_base_cradiov3,
+    "vit_large_cradiov3": vit_large_cradiov3,
+    "vit_huge_cradiov3": vit_huge_cradiov3,
+    "vit_giant_cradiov3": vit_giant_cradiov3,
+}

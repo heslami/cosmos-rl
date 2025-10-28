@@ -141,6 +141,7 @@ class OffloadActivations(saved_tensors_hooks):
                 assert (
                     len(self.tracker) == 0
                 ), "backward pass should have cleared tracker of all tensors"
+                # self.tracker.clear()
 
                 # set training phase trackers
                 self.is_first_forward_call = False

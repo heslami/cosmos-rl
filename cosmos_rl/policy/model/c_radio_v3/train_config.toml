@@ -1,7 +1,7 @@
 redis = "12800"
 
 [policy]
-model_name_or_path = "nvidia/C-RADIOv3-B"
+model_name_or_path = "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-g"
 model_gradient_checkpointing = true
 
 [policy.parallelism]
@@ -16,11 +16,12 @@ dp_replicate_size = 1
 resume = false
 epoch = 1
 param_dtype = "bfloat16"
+# master_dtype = "bfloat16"
 seed = 1234
 deterministic = true
 output_dir = "./outputs/cradio-v3-test"
 compile = false
-activation_offload = false  # TODO: try with offloading
+activation_offload = false
 train_batch_per_replica = 1
 optm_name = "AdamW"
 optm_lr = 5e-05
@@ -45,3 +46,16 @@ export_safetensors = false
 logger = ['console']
 project_name = "cosmos_rl"
 experiment_name = "cradio-sft"
+
+[profiler]
+enable_profiler = false
+# enable_nsys = true
+
+[profiler.sub_profiler_config]
+wait_steps = 1
+active_steps = 3
+rank_filter = [1]
+record_shape = true
+profile_memory = true
+with_stack = true
+with_modules = true

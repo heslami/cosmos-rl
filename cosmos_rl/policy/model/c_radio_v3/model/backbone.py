@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models._utils import IntermediateLayerGetter
 
-from .vit_adapter import vit_base_cradiov3
+from .vit_adapter import vit_model_dict
 
 
 class BackboneBase(nn.Module):
@@ -130,7 +130,7 @@ class Backbone(BackboneBase):
         return_interm_indices: list,
         dilation: bool,
         export: bool,
-        #  activation_checkpoint: bool
+        activation_checkpoint: bool,
     ):
         """Initialize the Backbone Class.
 
@@ -255,10 +255,10 @@ class Backbone(BackboneBase):
         #         k.replace("base_model.", "model."): v
         #         for k, v in pretrained_backbone_ckp.items()
         #     }
-        backbone = vit_base_cradiov3(
+        backbone = vit_model_dict[name](
             out_indices=return_interm_indices,
             resolution=resolution,
-            #  activation_checkpoint=activation_checkpoint
+            activation_checkpoint=activation_checkpoint,
         )
         num_channels = np.array([backbone.embed_dim] * len(return_interm_indices))
 

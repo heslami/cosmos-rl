@@ -547,6 +547,7 @@ class InteractionBlock(nn.Module):
         )
 
         for blk in blocks:
+            # x = torch.utils.checkpoint.checkpoint(blk, x)
             x = blk(x)
 
         c = self.extractor(

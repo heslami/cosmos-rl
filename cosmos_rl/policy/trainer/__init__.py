@@ -55,7 +55,7 @@ class Trainer(CommMixin):
         if config.train.deterministic:
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
-            torch.use_deterministic_algorithms(mode=True, warn_only=True)
+            # torch.use_deterministic_algorithms(mode=True, warn_only=True)
         set_flash_attn_deterministic(config.train.deterministic)
 
         self.config = config
@@ -103,6 +103,7 @@ class Trainer(CommMixin):
                 from cosmos_rl.policy.lora.plugin import reinitialize_lora_params
 
                 reinitialize_lora_params(model)
+
             # Enable gradient checkpointing for the model
             model.set_gradient_checkpointing_enabled(
                 config.policy.model_gradient_checkpointing

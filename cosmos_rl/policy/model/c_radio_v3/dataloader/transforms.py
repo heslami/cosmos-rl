@@ -29,7 +29,7 @@ def build_transforms(
     input_mean = [0.48145467042922974, 0.45782750844955444, 0.40821072459220886]
     input_std = [0.2686295509338379, 0.2613025903701782, 0.27577710151672363]
     scales = [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
-    random_resize_max_size = 1024
+    random_resize_max_size = 1728
 
     train_random_sizes = [400, 500, 600]
     train_random_crop_min = 384
@@ -38,7 +38,7 @@ def build_transforms(
     fixed_padding = True
 
     # ViT requires square input. D2 LSJ style data transforms
-    fixed_random_crop = 1024
+    fixed_random_crop = 1728
     normalize = Compose([ToTensor(), Normalize(input_mean, input_std)])
 
     # Fixed Padding is applied to prevent memory leak

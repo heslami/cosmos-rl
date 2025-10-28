@@ -21,6 +21,10 @@ def _apply_fsdp(
 ):
     """Apply FSDP sharding to model layers using data parallel mesh."""
     default_dp_mesh = mesh["dp_shard"]
+    # for name, module in model.model.named_children():
+    #     if name == "backbone":
+    #         continue
+    #     fully_shard(module, mesh=default_dp_mesh, reshard_after_forward=True)
     fully_shard(model, mesh=default_dp_mesh, reshard_after_forward=True)
 
 

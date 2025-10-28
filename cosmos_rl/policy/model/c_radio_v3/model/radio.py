@@ -25,6 +25,36 @@ radio_model_cfg = {
         "reg_tokens": 4,
         "no_embed_class": True,
     },
+    "vit_large_patch14_reg4_dinov2": {
+        "img_size": 518 * 16 // 14,
+        "patch_size": 16,
+        "embed_dim": 1024,
+        "depth": 24,
+        "num_heads": 16,
+        "init_values": 1e-5,
+        "reg_tokens": 4,
+        "no_embed_class": True,
+    },
+    "vit_huge_patch14_reg4_dinov2": {
+        "img_size": 518 * 16 // 14,
+        "patch_size": 16,
+        "embed_dim": 1280,
+        "depth": 32,
+        "num_heads": 16,
+        "init_values": 1e-5,
+        "reg_tokens": 4,
+        "no_embed_class": True,
+    },
+    "vit_giant_patch14_reg4_dinov2": {
+        "img_size": 518 * 16 // 14,
+        "patch_size": 16,
+        "embed_dim": 1536,
+        "depth": 40,
+        "num_heads": 24,
+        "init_values": 1e-5,
+        "reg_tokens": 4,
+        "no_embed_class": True,
+    },
 }
 
 
