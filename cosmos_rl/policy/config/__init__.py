@@ -467,7 +467,7 @@ class TrainingConfig(BaseModel):
     optm_decay_type: Optional[str] = Field(
         default=None,
         description="Type of decay for optimizer",
-        choices=["sqrt", "cosine", "linear", "none"],
+        choices=["sqrt", "cosine", "linear", "multistep", "none"],
     )
     optm_min_lr_factor: float = Field(
         default=0.0, description="Minimum lr factor for optimizer, range in [0.0, 1.0]"
@@ -475,6 +475,8 @@ class TrainingConfig(BaseModel):
     optm_grad_norm_clip: float = Field(
         default=1.0, description="Gradient norm clip for optimizer"
     )
+    optm_multistep_milestones: Optional[Union[int, List]] = Field(default=None)
+    optm_multistep_gamma: float = Field(default=1.0)
 
     # --------- FSDP ---------
 

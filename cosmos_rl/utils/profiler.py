@@ -36,6 +36,9 @@ class CosmosProfiler:
         replica_name: str,
         api_client: APIClient,
     ):
+        assert not (
+            config.profiler.enable_profiler and config.profiler.enable_nsys
+        ), "at most one can be enabled"
         self.config = config
         self.replica_name = replica_name
         self.enable_profile = config.profiler.enable_profiler
@@ -110,6 +113,7 @@ class CosmosProfiler:
                     with_stack=self.with_stack,
                     with_modules=self.with_modules,
                     profile_memory=self.profile_memory,
+                    # on_trace_ready=torch.profiler.tensorboard_trace_handler(f"{self.output_dir}/tb_logs"),
                 )
                 self.thread_pool = futures.ThreadPoolExecutor(max_workers=4)
 
@@ -225,6 +229,8 @@ class CosmosProfiler:
             )
             # save the trace asynchronously
             self.profiler.export_chrome_trace(trace_file_path)
+
+            # torch.profiler.tensorboard_trace_handler(f"{self.output_dir}/tb_logs")(self.profiler)
 
             # report to the controller
             # only report the dir

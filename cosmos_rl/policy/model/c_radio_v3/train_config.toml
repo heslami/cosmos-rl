@@ -1,0 +1,61 @@
+redis = "12800"
+
+[policy]
+model_name_or_path = "/lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/.cache/C-RADIOv3-g"
+model_gradient_checkpointing = true
+
+[policy.parallelism]
+tp_size = 1
+cp_size = 1
+ep_size = 1
+dp_shard_size = -1   # FSDP-only, autodetect shard size based on WORLD_SIZE
+pp_size = 1
+dp_replicate_size = 1
+
+[train]
+resume = false
+epoch = 1
+param_dtype = "bfloat16"
+# master_dtype = "bfloat16"
+seed = 1234
+deterministic = true
+output_dir = "./outputs/cradio-v3-test"
+compile = false
+activation_offload = false
+train_batch_per_replica = 1
+optm_name = "AdamW"
+optm_lr = 5e-05
+optm_weight_decay = 1e-4
+optm_decay_type = "multistep"
+optm_multistep_milestones = 150000  # FIXME: make it based on epoch count instead of step count
+
+[train.train_policy]
+type = "sft"
+dataloader_shuffle = true
+dataloader_num_workers = 8
+mini_batch = 1
+
+[train.ckpt]
+enable_checkpoint = true
+save_freq = 1000
+max_keep = 2
+save_mode = "sync"
+export_safetensors = false
+
+[logging]
+logger = ['console']
+project_name = "cosmos_rl"
+experiment_name = "cradio-sft"
+
+[profiler]
+enable_profiler = true
+# enable_nsys = true
+
+[profiler.sub_profiler_config]
+wait_steps = 6
+active_steps = 6
+rank_filter = [1]
+record_shape = true
+profile_memory = true
+with_stack = true
+with_modules = true

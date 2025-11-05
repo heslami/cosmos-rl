@@ -20,7 +20,7 @@ from datasets import load_dataset
 from cosmos_rl.launcher.worker_entry import main as launch_worker
 from cosmos_rl.policy.config import Config as CosmosConfig
 from cosmos_rl.dispatcher.algo.reward import gsm8k_reward_fn
-from cosmos_rl.dispatcher.data.packer import DecoderOnlyLLMDataPacker, DataPacker
+from cosmos_rl.dispatcher.data.packer import DecoderOnlyLLMDataPacker, ChatDataPacker
 from cosmos_rl.utils.modelscope import modelscope_load_dataset
 from cosmos_rl.utils.logging import logger
 from cosmos_rl.utils.tools_use import (
@@ -258,7 +258,7 @@ def custom_logger_fn(data: dict, step: int) -> None:
     pass
 
 
-class GSM8kDataPacker(DataPacker):
+class GSM8kDataPacker(ChatDataPacker):
     """
     This is a demo data packer that wraps the underlying data packer of the selected model.
     This is meaningless for this example, but useful for explaining:

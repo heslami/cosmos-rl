@@ -509,7 +509,7 @@ class ModelRegistry:
         hf_config = util.retry(AutoConfig.from_pretrained)(
             model_name_or_path, trust_remote_code=True
         )
-        model_type = hf_config.model_type
+        model_type = util.get_model_type(hf_config)
         is_supported_model_type = model_type in ModelRegistry._MODEL_REGISTRY
         if not is_supported_model_type:
             logger.info(
@@ -578,6 +578,9 @@ class ModelRegistry:
             ):
                 logger.info(f"Using cuda for model build of {model_name_or_path}.")
                 device = "cuda"
+            # if model_type == "cradio":
+            #     logger.info(f"Using cuda for model build of {model_name_or_path}.")
+            #     device = "cuda"
             return device
 
         build_model_device = _get_device_for_model_build(hf_config)

@@ -1,0 +1,393 @@
+"""Model functions."""
+
+from typing import Optional, Callable
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+import math
+
+
+def gen_encoder_output_proposals(
+    memory: torch.Tensor,
+    memory_padding_mask: torch.Tensor,
+    spatial_shapes: torch.Tensor,
+    learnedwh: Optional[torch.Tensor] = None,
+    export: bool = False,
+):
+    """Generate proposals from the output of the encoder.
+
+    Args:
+        memory (torch.Tensor): bs, r'\'sum{hw}, d_model
+        memory_padding_mask (torch.Tensor): bs, r'\'sum{hw}
+        spatial_shapes (torch.Tensor): nlevel, 2
+        learnedwh (torch.Tensor): 2
+        export (bool): whether the model is in export stage.
+
+    Returns:
+        output_memory (torch.Tensor): bs, r'\'sum{hw}, d_model
+        output_proposals (torch.Tensor): bs, r'\'sum{hw}', 4
+    """
+    N_, _, _ = memory.shape
+
+    proposals = []
+    _cur = 0
+    for lvl, (H_, W_) in enumerate(spatial_shapes):
+        if export:  # Fixed dimensions for export in onnx
+            H_, W_ = int(H_), int(W_)
+        else:
+            H_, W_ = spatial_shapes[lvl, 0], spatial_shapes[lvl, 1]
+
+        mask_flatten_ = memory_padding_mask[:, _cur : (_cur + H_ * W_)].view(
+            N_, H_, W_, 1
+        )
+        valid_H = torch.sum(~mask_flatten_[:, :, 0, 0], 1)
+        valid_W = torch.sum(~mask_flatten_[:, 0, :, 0], 1)
+
+        grid_y, grid_x = torch.meshgrid(
+            torch.linspace(0, H_ - 1, H_, dtype=torch.float32, device=memory.device),
+            torch.linspace(0, W_ - 1, W_, dtype=torch.float32, device=memory.device),
+        )
+        grid = torch.cat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)  # H_, W_, 2
+
+        scale = torch.cat([valid_W.unsqueeze(-1), valid_H.unsqueeze(-1)], 1).view(
+            N_, 1, 1, 2
+        )
+        grid = (grid.unsqueeze(0).expand(N_, -1, -1, -1) + 0.5) / scale
+
+        if learnedwh is not None:
+            wh = torch.ones_like(grid) * learnedwh.sigmoid() * (2.0**lvl)
+        else:
+            wh = torch.ones_like(grid) * 0.05 * (2.0**lvl)
+
+        proposal = torch.cat((grid, wh), -1).view(N_, -1, 4)
+        proposals.append(proposal)
+        _cur += H_ * W_
+
+    output_proposals = torch.cat(proposals, 1)
+    output_proposals_valid = (
+        (output_proposals > 0.01) & (output_proposals < 0.99)
+    ).all(-1, keepdim=True)
+    output_proposals = torch.log(output_proposals / (1 - output_proposals))  # unsigmoid
+    output_proposals = output_proposals.masked_fill(
+        memory_padding_mask.unsqueeze(-1), float("inf")
+    )
+    output_proposals = output_proposals.masked_fill(
+        ~output_proposals_valid, float("inf")
+    )
+
+    output_memory = memory
+    output_memory = output_memory.masked_fill(
+        memory_padding_mask.unsqueeze(-1), float(0)
+    )
+    output_memory = output_memory.masked_fill(~output_proposals_valid, float(0))
+
+    return output_memory, output_proposals
+
+
+class RandomBoxPerturber:
+    """Random Box Perturber Class."""
+
+    def __init__(
+        self, x_noise_scale=0.2, y_noise_scale=0.2, w_noise_scale=0.2, h_noise_scale=0.2
+    ) -> None:
+        """Initialize RandomBoxPerturber Class.
+
+        Args:
+            x_noise_scale (float): scale of noise applied to x dimension
+            y_noise_scale (float): scale of noise applied to y dimension
+            w_noise_scale (float): scale of noise applied to w dimension
+            h_noise_scale (float): scale of noise applied to h dimension
+        """
+        # FIXME
+        assert False, "legacy torch.Tensor constructor does not work, also needs reset_parameters implementation"
+        self.noise_scale = torch.Tensor(
+            [x_noise_scale, y_noise_scale, w_noise_scale, h_noise_scale]
+        )
+
+    def __call__(self, refanchors: torch.Tensor) -> torch.Tensor:
+        """Call function."""
+        _, _, query_dim = refanchors.shape
+        device = refanchors.device
+
+        noise_raw = torch.rand_like(refanchors)
+        noise_scale = self.noise_scale.to(device)[:query_dim]
+
+        new_refanchors = refanchors * (1 + (noise_raw - 0.5) * noise_scale)
+        return new_refanchors.clamp_(0, 1)
+
+
+class MLP(nn.Module):
+    """Simple multi-layer perceptron (FFN)."""
+
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
+        """FFN Initialization.
+
+        Args:
+            input_dim (int): input dimension.
+            hidden_dim (int): hidden dimension.
+            output_dim (int): output dimension.
+            num_layers (int): number of layers.
+        """
+        super().__init__()
+        self.num_layers = num_layers
+        h = [hidden_dim] * (num_layers - 1)
+        self.layers = nn.ModuleList(
+            nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim])
+        )
+
+    def forward(self, x):
+        """Forward function."""
+        for i, layer in enumerate(self.layers):
+            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
+        return x
+
+
+def get_activation_fn(activation):
+    """Return an activation function given a string.
+
+    Args:
+        activation (str): type of activation function.
+
+    Returns:
+        PyTorch activation layer.
+
+    Raises:
+        RuntimeError: if unsupported activation type is provided.
+    """
+    if activation == "silu":
+        return nn.SiLU()
+    if activation == "relu":
+        return F.relu
+    if activation == "gelu":
+        return F.gelu
+    if activation == "glu":
+        return F.glu
+    if activation == "prelu":
+        return nn.PReLU()
+    if activation == "selu":
+        return F.selu
+
+    raise RuntimeError(
+        f"activation should be relu/gelu/glu/prelu/selu, not {activation}."
+    )
+
+
+def gen_sineembed_for_position(pos_tensor):
+    """Generate sine embedding for position encoding.
+
+    Args:
+        pos_tensor (torch.Tensor): Positional Encoding.
+
+    Returns:
+        pos (torch.Tensor): Sine Embedding.
+    """
+    # n_query, bs, _ = pos_tensor.size()
+    # sineembed_tensor = torch.zeros(n_query, bs, 256)
+    # Keep the same dtype as pos_tensor
+    scale = pos_tensor.new_tensor(2 * math.pi)
+    dim_t = torch.arange(128, dtype=pos_tensor.dtype, device=pos_tensor.device)
+    dim_t = 10000 ** (2 * (dim_t // 2) / 128)
+    x_embed = pos_tensor[:, :, 0] * scale
+    y_embed = pos_tensor[:, :, 1] * scale
+    pos_x = x_embed[:, :, None] / dim_t
+    pos_y = y_embed[:, :, None] / dim_t
+    pos_x = torch.stack(
+        (pos_x[:, :, 0::2].sin(), pos_x[:, :, 1::2].cos()), dim=3
+    ).flatten(2)
+    pos_y = torch.stack(
+        (pos_y[:, :, 0::2].sin(), pos_y[:, :, 1::2].cos()), dim=3
+    ).flatten(2)
+    if pos_tensor.shape[-1] == 2:
+        pos = torch.cat((pos_y, pos_x), dim=2)
+    elif pos_tensor.shape[-1] == 4:
+        w_embed = pos_tensor[:, :, 2] * scale
+        pos_w = w_embed[:, :, None] / dim_t
+        pos_w = torch.stack(
+            (pos_w[:, :, 0::2].sin(), pos_w[:, :, 1::2].cos()), dim=3
+        ).flatten(2)
+
+        h_embed = pos_tensor[:, :, 3] * scale
+        pos_h = h_embed[:, :, None] / dim_t
+        pos_h = torch.stack(
+            (pos_h[:, :, 0::2].sin(), pos_h[:, :, 1::2].cos()), dim=3
+        ).flatten(2)
+
+        pos = torch.cat((pos_y, pos_x, pos_w, pos_h), dim=2)
+    else:
+        raise ValueError("Unknown pos_tensor shape(-1):{}".format(pos_tensor.size(-1)))
+    return pos
+
+
+def inverse_sigmoid(x, eps=1e-5):
+    """Inverse sigmoid."""
+    x = x.clamp(min=0, max=1)
+    x1 = x.clamp(min=eps)
+    x2 = (1 - x).clamp(min=eps)
+    return torch.log(x1 / x2)
+
+
+def _max_by_axis(the_list):
+    """Get maximum image shape for padding."""
+    maxes = the_list[0]
+    for sublist in the_list[1:]:
+        for index, item in enumerate(sublist):
+            maxes[index] = max(maxes[index], item)
+    return maxes
+
+
+def tensor_from_tensor_list(tensor_list, targets):
+    """Convert list of tensors with different size to fixed resolution.
+
+    The final size is determined by largest height and width.
+    In theory, the batch could become [3, 1333, 1333] on dataset with different aspect ratio, e.g. COCO
+    A fourth channel dimension is the mask region in which 0 represents the actual image and 1 means the padded region.
+    This is to give size information to the transformer archicture. If transform-padding is applied,
+    then only the pre-padded regions gets mask value of 1.
+
+    Args:
+        tensor_list (List[Tensor]): list of image tensors
+        targets (List[dict]): list of labels that contain the size information
+
+    Returns:
+        tensors (torch.Tensor): list of image tensors in shape of (B, 4, H, W)
+    """
+    if tensor_list[0].ndim == 3:
+        max_size = _max_by_axis([list(img.shape) for img in tensor_list])
+        batch_shape = [len(tensor_list)] + max_size
+        b, c, h, w = batch_shape
+        dtype = tensor_list[0].dtype
+        device = tensor_list[0].device
+        temp_tensors = torch.zeros((b, c, h, w), dtype=dtype, device=device)
+        mask = torch.ones((b, 1, h, w), dtype=dtype, device=device)
+        tensors = torch.concat((temp_tensors, mask), 1)
+        for img, target, pad_img in zip(tensor_list, targets, tensors):
+            # Get original image size before transform-padding
+            # If no transform-padding has been applied,
+            # then height == img.shape[1] and width == img.shape[2]
+            actual_height, actual_width = target["size"]
+            pad_img[: img.shape[0], :actual_height, :actual_width].copy_(
+                img[:, :actual_height, :actual_width]
+            )
+            pad_img[c, :actual_height, :actual_width] = (
+                0  # set zeros for mask in non-padded area
+            )
+    else:
+        raise ValueError("Channel size other than 3 is not supported")
+    return tensors
+
+
+# def load_pretrained_weights(pretrained_path, parser=None):
+#     """To get over pytorch lightning module in the checkpoint state_dict.
+
+#     Args:
+#         pretrained_path (str): path to the pretrained model.
+#         parser (function): function to parse the state dict for a custom model.
+#     """
+#     temp = torch.load(pretrained_path, map_location="cpu", weights_only=False)
+
+#     # if temp.get("state_dict_encrypted", False):
+#     #     # Retrieve encryption key from TLTPyTorchCookbook.
+#     #     key = TLTPyTorchCookbook.get_passphrase()
+#     #     if key is None:
+#     #         raise PermissionError("Cannot access model state dict without the encryption key")
+#     #     temp = patch_decrypt_checkpoint(temp, key)
+
+#     # if "pytorch-lightning_version" not in temp and parser is not None:
+#     #     temp["state_dict"] = parser(temp)
+
+#     # for loading pretrained I3D weights released on
+#     # https://github.com/piergiaj/pytorch-i3d
+#     # if "state_dict" not in temp:
+#     #     return temp
+
+#     assert "state_dict" in temp
+
+#     state_dict = {}
+#     for key, value in list(temp["state_dict"].items()):
+#         if "module" in key:
+#             new_key = ".".join(key.split(".")[1:])
+#             state_dict[new_key] = value
+#         elif key.startswith("backbone."):
+#             # MMLab compatible weight loading
+#             new_key = key[9:]
+#             state_dict[new_key] = value
+#         elif key.startswith("model."):
+#             # MAE compatible weight loading
+#             new_key = key[len("model.") :]
+#             state_dict[new_key] = value
+#         elif key.startswith("ema_"):
+#             # Do not include ema params from MMLab
+#             continue
+#         else:
+#             state_dict[key] = value
+
+#     return state_dict
+
+
+class LinearCopy(nn.Linear):
+    """
+    Copies the nn.Linear, with custom constant initialization for weight and bias.
+    """
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        bias_value: Optional[float] = None,
+        bias_compute_fn: Optional[Callable] = None,
+        weight_value: Optional[float] = None,
+        uniform_weight: bool = False,
+    ):
+        self.bias_value = bias_value
+        self.bias_compute_fn = bias_compute_fn
+        self.weight_value = weight_value
+        self.uniform_weight = uniform_weight
+        super().__init__(in_features, out_features)
+
+    def reset_parameters(self):
+        if self.uniform_weight:
+            nn.init.xavier_uniform_(self.weight)
+        elif self.weight_value is not None:
+            nn.init.constant_(self.weight, self.weight_value)
+        else:
+            # rollback to default for nn.Linear
+            nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        assert (self.bias_value is not None) != (self.bias_compute_fn is not None)
+        if self.bias_compute_fn is not None:
+            with torch.no_grad():
+                if isinstance(self.bias, torch.distributed.tensor.DTensor):
+                    idx = get_shard_indices(self.bias)
+                    local = self.bias.to_local()
+                    local.copy_(self.bias_compute_fn()[idx].to(self.bias.device))
+                else:
+                    self.bias.copy_(self.bias_compute_fn().to(self.bias.device))
+        else:
+            nn.init.constant_(self.bias, self.bias_value)
+
+
+class Conv2dCopy(nn.Conv2d):
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.weight, gain=1)
+        nn.init.constant_(self.bias, 0)
+
+
+def get_shard_indices(dtensor: torch.distributed.tensor.DTensor):
+    mesh = dtensor.device_mesh
+    placements = dtensor.placements
+    global_shape = dtensor.shape
+    coord = mesh.get_coordinate()
+
+    indices = []
+    for i, p in enumerate(placements):
+        if isinstance(p, torch.distributed.tensor.Shard):
+            dim = p.dim
+            n_chunks = mesh.size(i)
+            chunk_size = (global_shape[dim] + n_chunks - 1) // n_chunks
+            start = coord[i] * chunk_size
+            end = min(start + chunk_size, global_shape[dim])
+            indices.append(slice(start, end))
+        else:
+            indices.append(slice(None))
+    return tuple(indices)

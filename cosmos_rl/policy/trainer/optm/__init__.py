@@ -384,6 +384,13 @@ def build_lr_schedulers(
     stable_steps = training_steps + 1 - warmup_steps - decay_steps
     lr_decay_type = config.train.optm_decay_type
     min_lr_factor = config.train.optm_min_lr_factor
+    multistep_milestones = []
+    multistep_gamma = config.train.optm_multistep_gamma
+    if lr_decay_type == "multistep":
+        multistep_milestones = config.train.optm_multistep_milestones
+        assert multistep_milestones is not None and multistep_gamma is not None
+        if isinstance(multistep_milestones, int):
+            multistep_milestones = [multistep_milestones]
 
     def warmup_stable_decay(
         current_step: int,
@@ -392,6 +399,8 @@ def build_lr_schedulers(
         decay_steps: int,
         lr_decay_type: str,
         min_lr_factor: float,
+        multistep_milestones: list[int],
+        multistep_gamma: float,
     ):
         """
         Computes linear warmup followed by stable learning rate for a while,
@@ -409,6 +418,14 @@ def build_lr_schedulers(
         If `min_lr_factor` is specified, the decay range is scaled from 1 to `min_lr_factor`
         to ensure the learning rate does not drop below this minimum value.
         """
+        if len(multistep_milestones) > 0:
+            factor = 1.0
+            for milestone in multistep_milestones:
+                if current_step >= milestone:
+                    factor *= multistep_gamma
+                else:
+                    break
+            return factor
         warmup_stable_steps = warmup_steps + stable_steps
         if current_step < warmup_steps:
             # linear warmup
@@ -447,6 +464,8 @@ def build_lr_schedulers(
         decay_steps=decay_steps,
         lr_decay_type=lr_decay_type,
         min_lr_factor=min_lr_factor,
+        multistep_milestones=multistep_milestones,
+        multistep_gamma=multistep_gamma,
     )
 
     return LRSchedulersContainer(optimizers, lr_lambda)

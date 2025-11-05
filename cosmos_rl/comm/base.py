@@ -15,7 +15,7 @@
 
 import torch.distributed as dist
 import uuid
-from typing import Dict, Callable, Type, Optional, Any
+from typing import Dict, Callable, Type, Optional, Any, Union
 import copy
 import time
 import atexit
@@ -40,8 +40,74 @@ import cosmos_rl.utils.util as util
 import base64
 import cloudpickle
 from transformers import AutoConfig
+import transformers
 import multiprocessing as mp
 from cosmos_rl.dispatcher.api.client import APIClient
+
+import os
+import ast
+
+
+def module_to_path(filename: str, module_name: str) -> str:
+    parts = module_name.split(".")
+    return os.path.join(os.path.dirname(filename), *parts) + ".py"
+
+
+def recursive_look_for_imports(filename, node):
+    result = set()
+    if isinstance(node, ast.Import):
+        # Handle 'import .x' statements
+        for alias in node.names:
+            if alias.name.startswith("."):
+                assert "." not in alias.name[1:]
+                module_name = alias.name[1:]
+                result.add(module_name)
+                result.update(
+                    get_relative_imports(module_to_path(filename, module_name))
+                )
+    elif isinstance(node, ast.ImportFrom):
+        # Handle 'from .x import y' and 'from . import x' statements
+        if node.level == 1:
+            if node.module:
+                result.add(node.module)
+                result.update(
+                    get_relative_imports(module_to_path(filename, node.module))
+                )
+            else:
+                for alias in node.names:
+                    result.add(alias.name)
+                    result.update(
+                        get_relative_imports(module_to_path(filename, alias.name))
+                    )
+
+    # Recursively visit all children
+    for child in ast.iter_child_nodes(node):
+        result.update(recursive_look_for_imports(filename, child))
+    return result
+
+
+_visited = set()
+_memo = {}
+
+
+def get_relative_imports(filename: Union[str, os.PathLike]) -> list[str]:
+    if filename in _memo:
+        return _memo[filename]
+    if filename in _visited:
+        return []
+    _visited.add(filename)
+
+    with open(filename, encoding="utf-8") as f:
+        content = f.read()
+
+    tree = ast.parse(content)
+    imported_modules = recursive_look_for_imports(filename, tree)
+    result = sorted(imported_modules)
+    _memo[filename] = result
+    return result
+
+
+transformers.dynamic_module_utils.get_relative_imports = get_relative_imports
 
 
 class CommMixin:
@@ -101,7 +167,7 @@ class CommMixin:
             self.config.policy.model_name_or_path, trust_remote_code=True
         )
         is_vlm = getattr(hf_config, "vision_config", None) is not None
-        model_type = hf_config.model_type
+        model_type = util.get_model_type(hf_config)
 
         user_data_packer = metadata.get("user_data_packer", None)
         if user_data_packer:
