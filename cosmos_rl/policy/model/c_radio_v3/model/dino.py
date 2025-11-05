@@ -13,7 +13,6 @@ from .dn_components import prepare_for_cdn, dn_post_process
 from .model_utils import (
     MLP,
     inverse_sigmoid,
-    tensor_from_tensor_list,
     LinearCopy,
     Conv2dCopy,
 )
@@ -306,8 +305,14 @@ class DINO(nn.Module):
             pred_logits (torch.Tensor): the classification logits (including no-object) for all queries. Shape= [batch_size x num_queries x (num_classes + 1)]
             pred_boxes (torch.Tensor): The normalized boxes coordinates for all queries, represented as(center_x, center_y, height, width)
         """
-        if not isinstance(samples, torch.Tensor):
-            samples = tensor_from_tensor_list(samples)
+        # FIXME - make it work with list of tensors
+        samples = (
+            samples.to_local()
+            if isinstance(samples, torch.distributed.tensor.DTensor)
+            else samples
+        )
+        # if not isinstance(samples, torch.Tensor):
+        #     samples = tensor_from_tensor_list(samples)
 
         features = self.backbone(samples)
 

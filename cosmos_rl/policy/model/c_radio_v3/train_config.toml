@@ -48,12 +48,12 @@ project_name = "cosmos_rl"
 experiment_name = "cradio-sft"
 
 [profiler]
-enable_profiler = false
+enable_profiler = true
 # enable_nsys = true
 
 [profiler.sub_profiler_config]
-wait_steps = 1
-active_steps = 3
+wait_steps = 6
+active_steps = 6
 rank_filter = [1]
 record_shape = true
 profile_memory = true

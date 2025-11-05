@@ -550,6 +550,8 @@ class InteractionBlock(nn.Module):
             # x = torch.utils.checkpoint.checkpoint(blk, x)
             x = blk(x)
 
+        assert not isinstance(x, torch.distributed.tensor.DTensor)
+
         c = self.extractor(
             query=c,
             reference_points=deform_inputs2[0],

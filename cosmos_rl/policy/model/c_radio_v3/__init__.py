@@ -226,7 +226,7 @@ class CRadioV3Model(BaseModel):
                 hidden_dim=256,  # default
                 # pretrained_backbone_path=pretrained_backbone,
                 # backbone=backbone,
-                train_backbone=False,
+                train_backbone=True,
                 num_feature_levels=5,
                 nheads=8,  # default
                 enc_layers=6,
@@ -294,6 +294,7 @@ class CRadioV3Model(BaseModel):
         device: torch.device,
         revision: Optional[str] = None,
     ):
+        # return
         model_path = util.resolve_model_path(model_name_or_path, revision=revision)
         safetensors_files = [
             f for f in os.listdir(model_path) if f.endswith(".safetensors")
