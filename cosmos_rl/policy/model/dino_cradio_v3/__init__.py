@@ -172,7 +172,7 @@ class DINOCRadioV3Model(BaseModel):
             )
             for name in ckpt.keys():
                 ckpt_tensor = ckpt.get_tensor(name)
-                dest_name, tensor = convert_weight_from_hf(
+                dest_name, sharded_tensor = convert_weight_from_hf(
                     ckpt_tensor, name, parallel_dims
                 )
                 if dest_name not in backbone_state_dict:
@@ -181,11 +181,16 @@ class DINOCRadioV3Model(BaseModel):
                     )
                     continue
                 target_tensor = backbone_state_dict[dest_name]
+                local_view = (
+                    target_tensor.to_local()
+                    if isinstance(target_tensor, torch.distributed.tensor.DTensor)
+                    else target_tensor
+                )
                 assert (
-                    target_tensor.shape == tensor.shape
-                ), f"Shape mismatch: {target_tensor.shape} != {tensor.shape} for {dest_name}"
+                    local_view.shape == sharded_tensor.shape
+                ), f"Shape mismatch: {local_view.shape} != {sharded_tensor.shape} for {dest_name}"
                 with torch.no_grad():
-                    target_tensor.copy_(tensor)
+                    local_view.copy_(sharded_tensor)
                 used_checkpoint_names.add(dest_name)
 
         for name, parameter in backbone.named_parameters():
