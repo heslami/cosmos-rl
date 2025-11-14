@@ -1,5 +1,7 @@
 """Model functions."""
 
+from typing import Callable, Optional
+
 import torch
 from torch import nn, Tensor
 
@@ -98,8 +100,8 @@ class RandomBoxPerturber:
             w_noise_scale (float): scale of noise applied to w dimension
             h_noise_scale (float): scale of noise applied to h dimension
         """
-        self.noise_scale = torch.Tensor(
-            [x_noise_scale, y_noise_scale, w_noise_scale, h_noise_scale]
+        self.noise_scale = torch.tensor(
+            [x_noise_scale, y_noise_scale, w_noise_scale, h_noise_scale], device="cpu"
         )
 
     def __call__(self, refanchors: Tensor) -> Tensor:
@@ -245,3 +247,49 @@ def gen_sineembed_for_position(pos_tensor):
     else:
         raise ValueError("Unknown pos_tensor shape(-1):{}".format(pos_tensor.size(-1)))
     return pos
+
+
+class LinearWithCustomInit(nn.Linear):
+    """
+    Copy of nn.Linear, with custom initialization for weight and bias.
+    """
+
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        bias_value: Optional[float] = None,
+        bias_compute_fn: Optional[Callable] = None,
+        weight_value: Optional[float] = None,
+        uniform_weight: bool = False,
+    ):
+        self.bias_value = bias_value
+        self.bias_compute_fn = bias_compute_fn
+        self.weight_value = weight_value
+        self.uniform_weight = uniform_weight
+        super().__init__(in_features, out_features)
+
+    def reset_parameters(self):
+        if self.uniform_weight:
+            nn.init.xavier_uniform_(self.weight)
+        elif self.weight_value is not None:
+            nn.init.constant_(self.weight, self.weight_value)
+        else:
+            # rollback to default for nn.Linear
+            nn.init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        assert (self.bias_value is not None) != (self.bias_compute_fn is not None)
+        if self.bias_compute_fn is not None:
+            with torch.no_grad():
+                self.bias.copy_(self.bias_compute_fn().to(self.bias.device))
+        else:
+            nn.init.constant_(self.bias, self.bias_value)
+
+
+class Conv2dWithCustomInit(nn.Conv2d):
+    """
+    Copy of nn.Conv2d, with custom initialization for weight and bias.
+    """
+
+    def reset_parameters(self):
+        nn.init.xavier_uniform_(self.weight, gain=1)
+        nn.init.constant_(self.bias, 0)

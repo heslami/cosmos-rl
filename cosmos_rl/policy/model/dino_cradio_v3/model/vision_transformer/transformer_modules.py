@@ -108,7 +108,12 @@ class LayerScale(nn.Module):
         """Initialize LayerScale."""
         super().__init__()
         self.inplace = inplace
-        self.gamma = nn.Parameter(init_values * torch.ones(dim))
+        self.gamma = nn.Parameter(torch.empty(dim))
+        self.init_values = init_values
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        nn.init.constant_(self.gamma, self.init_values)
 
     def forward(self, x):
         """Forward function."""

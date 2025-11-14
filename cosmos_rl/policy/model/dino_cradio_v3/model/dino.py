@@ -7,9 +7,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from cosmos_rl.utils.logging import logger
 from .dn_components import prepare_for_cdn, dn_post_process
-from .model_utils import MLP
+from .model_utils import MLP, LinearWithCustomInit, Conv2dWithCustomInit
 from .deformable_detr.utils import tensor_from_tensor_list, inverse_sigmoid
 
 
@@ -119,14 +118,18 @@ class DINO(nn.Module):
         self.dec_pred_class_embed_share = dec_pred_class_embed_share
         self.dec_pred_bbox_embed_share = dec_pred_bbox_embed_share
         # prepare class & box embed
-        _class_embed = nn.Linear(hidden_dim, num_classes)
-        _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
-        # init the two embed layers
         prior_prob = 0.01
         bias_value = -math.log((1 - prior_prob) / prior_prob)
-        _class_embed.bias.data = torch.ones(self.num_classes) * bias_value
-        nn.init.constant_(_bbox_embed.layers[-1].weight.data, 0)
-        nn.init.constant_(_bbox_embed.layers[-1].bias.data, 0)
+        _class_embed = LinearWithCustomInit(
+            hidden_dim, num_classes, bias_value=bias_value
+        )
+        _bbox_embed = MLP(hidden_dim, hidden_dim, 4, 3)
+        _bbox_embed.layers[-1] = LinearWithCustomInit(
+            _bbox_embed.layers[-1].in_features,
+            _bbox_embed.layers[-1].out_features,
+            bias_value=0,
+            weight_value=0,
+        )
 
         if dec_pred_bbox_embed_share:
             box_embed_layerlist = [
@@ -191,8 +194,6 @@ class DINO(nn.Module):
                 layer.label_embedding = None
             self.label_embedding = None
 
-        self._reset_parameters()
-
     def prepare_channel_mapper(self, num_feature_levels, hidden_dim, two_stage_type):
         """Create Channel Mapper style for DETR-based model.
 
@@ -211,14 +212,14 @@ class DINO(nn.Module):
                 in_channels = self.backbone.num_channels[_]
                 input_proj_list.append(
                     nn.Sequential(
-                        nn.Conv2d(in_channels, hidden_dim, kernel_size=1),
+                        Conv2dWithCustomInit(in_channels, hidden_dim, kernel_size=1),
                         nn.GroupNorm(32, hidden_dim),
                     )
                 )
             for _ in range(num_feature_levels - num_backbone_outs):
                 input_proj_list.append(
                     nn.Sequential(
-                        nn.Conv2d(
+                        Conv2dWithCustomInit(
                             in_channels, hidden_dim, kernel_size=3, stride=2, padding=1
                         ),
                         nn.GroupNorm(32, hidden_dim),
@@ -233,7 +234,7 @@ class DINO(nn.Module):
         return nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.Conv2d(
+                    Conv2dWithCustomInit(
                         self.backbone.num_channels[-1], hidden_dim, kernel_size=1
                     ),
                     nn.GroupNorm(32, hidden_dim),
@@ -241,46 +242,11 @@ class DINO(nn.Module):
             ]
         )
 
-    def _reset_parameters(self):
-        # init input_proj
-        for proj in self.input_proj:
-            nn.init.xavier_uniform_(proj[0].weight, gain=1)
-            nn.init.constant_(proj[0].bias, 0)
-
     def init_ref_points(self, use_num_queries):
         """Initialize reference points"""
-        self.refpoint_embed = nn.Embedding(use_num_queries, self.query_dim)
-        if self.random_refpoints_xy:
-            self.refpoint_embed.weight.data[:, :2].uniform_(0, 1)
-            self.refpoint_embed.weight.data[:, :2] = inverse_sigmoid(
-                self.refpoint_embed.weight.data[:, :2]
-            )
-            self.refpoint_embed.weight.data[:, :2].requires_grad = False
-
-        if self.fix_refpoints_hw > 0:
-            logger.info("fix_refpoints_hw: {}".format(self.fix_refpoints_hw))
-            assert self.random_refpoints_xy
-            self.refpoint_embed.weight.data[:, 2:] = self.fix_refpoints_hw
-            self.refpoint_embed.weight.data[:, 2:] = inverse_sigmoid(
-                self.refpoint_embed.weight.data[:, 2:]
-            )
-            self.refpoint_embed.weight.data[:, 2:].requires_grad = False
-        elif int(self.fix_refpoints_hw) == -1:
-            pass
-        elif int(self.fix_refpoints_hw) == -2:
-            logger.info("learn a shared h and w")
-            assert self.random_refpoints_xy
-            self.refpoint_embed = nn.Embedding(use_num_queries, 2)
-            self.refpoint_embed.weight.data[:, :2].uniform_(0, 1)
-            self.refpoint_embed.weight.data[:, :2] = inverse_sigmoid(
-                self.refpoint_embed.weight.data[:, :2]
-            )
-            self.refpoint_embed.weight.data[:, :2].requires_grad = False
-            self.hw_embed = nn.Embedding(1, 1)
-        else:
-            raise NotImplementedError(
-                "Unknown fix_refpoints_hw {}".format(self.fix_refpoints_hw)
-            )
+        raise NotImplementedError(
+            "Custom nn.Embedding module requird. Not implemented yet!"
+        )
 
     def forward(self, samples, targets=None):
         """Forward function of DINO Model
