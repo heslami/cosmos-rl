@@ -16,9 +16,7 @@ class DINOModel(nn.Module):
         self,
         num_classes=4,
         hidden_dim=256,
-        pretrained_backbone_path=None,
-        backbone="resnet_50",
-        train_backbone=True,
+        backbone="vit_base_cradiov3",
         num_feature_levels=2,
         nheads=8,
         enc_layers=6,
@@ -66,10 +64,7 @@ class DINOModel(nn.Module):
         Args:
             num_classes (int): number of classes for the model.
             hidden_dim (int): size of the hidden dimension.
-            pretrained_backbone_path (str): pretrained backbone path.
-                                            If not provided, train from scratch.
             backbone (str): type of backbone architecture.
-            train_backbone (bool): whether to train backbone or not.
             num_feature_levels (int): Number of levels to extract from the backbone feature maps.
             nheads (int): number of heads.
             enc_layers (int): number of encoder layers.
@@ -143,7 +138,7 @@ class DINOModel(nn.Module):
             )
 
         # sanity check for ViT backbones
-        if backbone.startswith("vit") and lsj_resolution is None:
+        if lsj_resolution is None:
             raise ValueError(
                 f"{backbone} requires dataset.augmentation.fixed_random_crop to be set. "
                 "Please set dataset.augmentation.fixed_random_crop in the spec file."
@@ -153,8 +148,6 @@ class DINOModel(nn.Module):
         return_interm_indices = [r for r in return_interm_indices if r != 4]
         backbone_only = Backbone(
             backbone,
-            pretrained_backbone_path,
-            train_backbone,
             lsj_resolution,
             return_interm_indices,
             dilation,

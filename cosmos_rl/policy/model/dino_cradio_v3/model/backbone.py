@@ -5,13 +5,8 @@ import torch
 import torch.nn.functional as F
 
 from torch import nn
-from typing import Optional
 from typing import Dict, List
 
-from ..dist_utils import get_global_rank
-from cosmos_rl.utils.logging import logger
-
-from deformable_detr.utils import load_pretrained_weights
 from vision_transformer.vit_adapter import vit_model_dict
 
 
@@ -22,18 +17,15 @@ class BackboneBase(nn.Module):
         self,
         model_name,
         backbone: nn.Module,
-        train_backbone: bool,
         num_channels: int,
         return_interm_indices: list,
         export: bool,
-        missing_keys: list,
     ):
         """Initialize the Backbone Base Class.
 
         Args:
             model_name (str): backbone model name.
             backbone (nn.Module): backbone torch module.
-            train_backbone (bool): flag whether we want to train the backbone or not.
             num_channels (int): channel size.
             return_interm_indices (list): list of layer indices to reutrn as backbone features.
             export (bool): flag to indicate whehter exporting to onnx or not.
@@ -42,13 +34,6 @@ class BackboneBase(nn.Module):
         self.export = export
         self.model_name = model_name
 
-        assert model_name.startswith(("vit"))
-        # These params are still part of backbone but trainable
-        if not missing_keys:
-            missing_keys = []
-        for name, parameter in backbone.named_parameters():
-            if not any(p in name for p in missing_keys) and not train_backbone:
-                parameter.requires_grad_(False)
         self.body = backbone
 
         self.num_channels = num_channels
@@ -101,8 +86,6 @@ class Backbone(BackboneBase):
     def __init__(
         self,
         name: str,
-        pretrained_backbone_path: Optional[str],
-        train_backbone: bool,
         resolution: int,
         return_interm_indices: list,
         dilation: bool,
@@ -112,8 +95,6 @@ class Backbone(BackboneBase):
         """Initialize the Backbone Class.
 
         Args:
-            pretrained_backbone_path (str): optional path to the pretrained backbone.
-            train_backbone (bool): flag whether we want to train the backbone or not.
             resolution (int): input resolution for ViT models.
             return_interm_indices (list): list of layer indices to reutrn as backbone features.
             dilation (bool): flag whether we can to use dilation or not.
@@ -137,27 +118,11 @@ class Backbone(BackboneBase):
                 f"Duplicate index in the provided return_interm_indices: {return_interm_indices}"
             )
 
-        pretrained_backbone_ckp = (
-            load_pretrained_weights(pretrained_backbone_path)
-            if pretrained_backbone_path
-            else None
-        )
-
         if name not in vit_model_dict:
             raise NotImplementedError(
                 f"{name} is not supported ViT-Adapter backbone. "
                 f"Supported architecutres: {vit_model_dict.keys()}"
             )
-
-        # For C-RADIO backbones we still want to use the supplied checkpoint, we just skip
-        # the interpolation step because the weights are already trained with the same
-        # patch-size / resolution. For all other ViT backbones we continue to interpolate
-        # the positional and patch embeddings to match the training resolution.
-        if pretrained_backbone_ckp:
-            pretrained_backbone_ckp = {
-                k.replace("base_model.", "model."): v
-                for k, v in pretrained_backbone_ckp.items()
-            }
 
         backbone = vit_model_dict[name](
             out_indices=return_interm_indices,
@@ -166,26 +131,12 @@ class Backbone(BackboneBase):
         )
         num_channels = np.array([backbone.embed_dim] * len(return_interm_indices))
 
-        missing_keys = None
-        if pretrained_backbone_ckp:
-            _tmp_st_output = backbone.load_state_dict(
-                pretrained_backbone_ckp, strict=False
-            )
-            missing_keys = list(_tmp_st_output[0])
-            if get_global_rank() == 0:
-                logger.info(
-                    f"Loaded pretrained weights from {pretrained_backbone_path}"
-                )
-                logger.info(f"{_tmp_st_output}")
-
         super().__init__(
             name,
             backbone,
-            train_backbone,
             num_channels,
             return_interm_indices,
             export,
-            missing_keys,
         )
 
 
