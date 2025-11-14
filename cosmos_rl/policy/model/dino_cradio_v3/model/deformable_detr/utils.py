@@ -1,45 +1,6 @@
 import torch
 
 
-def load_pretrained_weights(pretrained_path, parser=None):
-    """To get over pytorch lightning module in the checkpoint state_dict.
-
-    Args:
-        pretrained_path (str): path to the pretrained model.
-        parser (function): function to parse the state dict for a custom model.
-    """
-    temp = torch.load(pretrained_path, map_location="cpu", weights_only=False)
-
-    if "pytorch-lightning_version" not in temp and parser is not None:
-        temp["state_dict"] = parser(temp)
-
-    # for loading pretrained I3D weights released on
-    # https://github.com/piergiaj/pytorch-i3d
-    if "state_dict" not in temp:
-        return temp
-
-    state_dict = {}
-    for key, value in list(temp["state_dict"].items()):
-        if "module" in key:
-            new_key = ".".join(key.split(".")[1:])
-            state_dict[new_key] = value
-        elif key.startswith("backbone."):
-            # MMLab compatible weight loading
-            new_key = key[9:]
-            state_dict[new_key] = value
-        elif key.startswith("model."):
-            # MAE compatible weight loading
-            new_key = key[len("model.") :]
-            state_dict[new_key] = value
-        elif key.startswith("ema_"):
-            # Do not include ema params from MMLab
-            continue
-        else:
-            state_dict[key] = value
-
-    return state_dict
-
-
 def _max_by_axis(the_list):
     """Get maximum image shape for padding."""
     maxes = the_list[0]

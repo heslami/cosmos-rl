@@ -1,0 +1,83 @@
+dataset:
+  augmentation:
+    fixed_random_crop: 1728
+    test_random_resize: 1728
+    random_resize_max_size: 1728
+    fixed_padding: true
+    # C-RADIO models
+    input_mean: [0.48145467042922974, 0.45782750844955444, 0.40821072459220886]
+    input_std: [0.2686295509338379, 0.2613025903701782, 0.27577710151672363]
+    scales: [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
+    train_random_resize: [400, 500, 600]
+    train_random_crop_min: 384
+    train_random_crop_max: 600
+    horizontal_flip_prob: 0.5
+  batch_size: 2
+  dataset_type: default
+  num_classes: 91
+  train_data_sources:
+  - image_dir: /lustre/fsw/portfolios/edgeai/users/scha/data/coco/raw-data/train2017
+    json_file: /lustre/fsw/portfolios/edgeai/users/scha/data/coco/raw-data/annotations/instances_train2017.json
+  # val_data_sources:
+  # - image_dir: /lustre/fsw/portfolios/edgeai/users/scha/data/coco/raw-data/val2017
+  #   json_file: /lustre/fsw/portfolios/edgeai/users/scha/data/coco/raw-data/annotations/instances_val2017.json
+  workers: 8
+model:
+  # backbone: vit_giant_cradiov3
+  dec_layers: 6
+  dim_feedforward: 2048
+  dropout_ratio: 0.0
+  enc_layers: 6
+  num_feature_levels: 5
+  num_queries: 900
+  # pretrained_backbone_path: /lustre/fsw/portfolios/llmservice/users/mranzinger/output/radio_releases/commercial/v3/c-radio_v3-g_half.pth.tar
+  return_interm_indices:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  train_backbone: true
+# results_dir: /lustre/fs11/portfolios/sw/projects/sw_aidot/users/heslami/checkpoints/dino/cradiov3_giant_coco_stage3
+  cls_loss_coef: 2.0
+  bbox_loss_coef: 5.0
+  giou_loss_coef: 2.0
+  use_dn: true
+  dn_number: 100
+  dn_box_noise_scale: 1.0
+  dn_label_noise_ratio: 0.5
+  aux_loss: true
+  two_stage_type: "standard"
+  no_interm_box_loss: false
+  interm_loss_coef: 1.0
+  loss_types: ["labels", "boxes"]
+  focal_alpha: 0.25
+  hidden_dim: 256
+  nheads: 8
+  dec_n_points: 4
+  enc_n_points: 4
+  dilation: false
+  pre_norm: false
+  decoder_sa_type: "sa"
+  embed_init_tgt: true
+  fix_refpoints_hw: -1
+  pe_temperatureH: 20
+  pe_temperatureW: 20
+train:
+  # checkpoint_interval: 1
+  # checkpoint_interval_unit: epoch
+  # distributed_strategy: ddp
+  activation_checkpoint: true
+  # num_epochs: 1
+  # num_gpus: 8
+  # num_nodes: 1
+  # optim:
+  #   layer_decay_rate: 0.65
+  #   lr: 5e-05
+  #   lr_backbone: 5e-05
+  #   lr_steps:
+  #   - 10
+  #   momentum: 0.9
+  # precision: bf16
+  # validation_interval: 1
+export: false
