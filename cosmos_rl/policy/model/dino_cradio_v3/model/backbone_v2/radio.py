@@ -9,8 +9,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
+import timm
 from timm.models import checkpoint_seq
 from timm.models.vision_transformer import VisionTransformer
+
+from ..vision_transformer.transformer_modules import Attention
 
 
 radio_model_cfg = {
@@ -532,6 +535,9 @@ class RADIOBase(nn.Module):
         # Here we hack torch.linspace and force it to run on CPU. The output is temporary, so this doesn't impact correctness
         orig_linspace = torch.linspace
         torch.linspace = functools.partial(orig_linspace, device="cpu")
+
+        # Monkey-patch Attention module used in the backbone VisionTransformer so it's tensor-parallel-friendly
+        timm.layers.Attention = Attention
 
         vit_backbone = VisionTransformer(
             img_size=img_size,
