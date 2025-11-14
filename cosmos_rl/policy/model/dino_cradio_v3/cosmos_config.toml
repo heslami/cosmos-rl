@@ -5,12 +5,12 @@ model_name_or_path = "nvidia/C-RADIOv3-g"
 # model_gradient_checkpointing = true
 
 [policy.parallelism]
-tp_size = 1
+tp_size = 2
 cp_size = 1
 ep_size = 1
-dp_shard_size = 1
+dp_shard_size = -1
 pp_size = 1
-dp_replicate_size = 8
+dp_replicate_size = 1
 
 [train]
 resume = false
