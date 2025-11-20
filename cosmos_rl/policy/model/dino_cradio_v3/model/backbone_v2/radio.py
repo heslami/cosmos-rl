@@ -3,6 +3,7 @@
 import math
 import types
 from typing import List, Optional, Tuple, Union
+import functools
 
 import torch
 import torch.nn as nn
@@ -163,13 +164,17 @@ class ClsToken(nn.Module):
                     num_tokens % register_multiple
                 )
 
-            scale = ndim**-0.5
             self.token = nn.Parameter(
-                torch.randn(num_tokens + self.num_registers, ndim) * scale
+                torch.empty(num_tokens + self.num_registers, ndim)
             )
         else:
             self.token = None
         self.num_patches = self.num_tokens + self.num_registers
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        if self.token is not None:
+            nn.init.normal_(self.token, mean=0.0, std=self.ndim**-0.5)
 
     def no_weight_decay(self):
         """No weight decay."""
@@ -253,10 +258,8 @@ class ViTPatchGenerator(nn.Module):
             patch_size, embed_dim, device=device, dtype=dtype
         )
         if abs_pos:
-            scale = embed_dim**-0.5
             self.pos_embed = nn.Parameter(
-                torch.randn(1, self.num_patches, embed_dim, device=device, dtype=dtype)
-                * scale
+                torch.empty(1, self.num_patches, embed_dim, device=device, dtype=dtype)
             )
         self.cls_token = ClsToken(
             embed_dim,
@@ -267,6 +270,11 @@ class ViTPatchGenerator(nn.Module):
         self.patch_normalizer = (
             nn.LayerNorm(embed_dim) if normalize_patches else nn.Identity()
         )
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        if self.abs_pos:
+            nn.init.normal_(self.pos_embed, mean=0.0, std=self.embed_dim**-0.5)
 
     def forward(self, x: torch.Tensor):
         """Forward function to return the patch embeddings with position embedding applied."""
@@ -519,6 +527,12 @@ class RADIOBase(nn.Module):
         else:
             img_size = 224
 
+        # Currently timm's VisionTransformer uses torch.linspace to produce dims needed for initialization.
+        # Accessing dims under "meta" device isn't allowed.
+        # Here we hack torch.linspace and force it to run on CPU. The output is temporary, so this doesn't impact correctness
+        orig_linspace = torch.linspace
+        torch.linspace = functools.partial(orig_linspace, device="cpu")
+
         vit_backbone = VisionTransformer(
             img_size=img_size,
             in_chans=self.in_chans,
@@ -529,6 +543,9 @@ class RADIOBase(nn.Module):
             weight_init="skip",
             **self.model_cfg,
         )
+
+        torch.linspace = orig_linspace
+
         # CRADIO models replace `vit_backbone.norm` and `vit_backbone.head` with `nn.Identity()`.
         if hasattr(vit_backbone, "norm"):
             vit_backbone.norm = nn.Identity()
